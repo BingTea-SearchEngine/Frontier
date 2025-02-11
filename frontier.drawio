@@ -1,0 +1,40 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/26.0.9 Chrome/128.0.6613.186 Electron/32.2.5 Safari/537.36" version="26.0.9">
+  <diagram name="Page-1" id="M2HYPNa58XWOIV9PPLL1">
+    <mxGraphModel dx="1224" dy="793" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="mF9jJ3oc6lBVz3y6j7Zx-4" value="&lt;font style=&quot;font-size: 20px;&quot;&gt;Gateway&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="360" y="300" width="130" height="390" as="geometry" />
+        </mxCell>
+        <mxCell id="mF9jJ3oc6lBVz3y6j7Zx-12" value="&lt;font style=&quot;font-size: 20px;&quot;&gt;Main Process&lt;/font&gt;" style="shape=process;whiteSpace=wrap;html=1;backgroundOutline=1;labelPosition=center;verticalLabelPosition=top;align=center;verticalAlign=bottom;" vertex="1" parent="1">
+          <mxGeometry x="50" y="425" width="220" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="mF9jJ3oc6lBVz3y6j7Zx-14" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="mF9jJ3oc6lBVz3y6j7Zx-12" target="mF9jJ3oc6lBVz3y6j7Zx-4">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="280" y="560" as="sourcePoint" />
+            <mxPoint x="330" y="510" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="mF9jJ3oc6lBVz3y6j7Zx-15" value="&lt;font style=&quot;font-size: 15px;&quot;&gt;Priority queue&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="100" y="430" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="mF9jJ3oc6lBVz3y6j7Zx-16" value="&lt;font style=&quot;font-size: 15px;&quot;&gt;Bloom filter&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="100" y="500" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="mF9jJ3oc6lBVz3y6j7Zx-17" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="mF9jJ3oc6lBVz3y6j7Zx-4" target="mF9jJ3oc6lBVz3y6j7Zx-18">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="540" y="490" as="sourcePoint" />
+            <mxPoint x="630" y="495" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="mF9jJ3oc6lBVz3y6j7Zx-18" value="&lt;font style=&quot;font-size: 20px;&quot;&gt;Worker Crawlers&lt;/font&gt;" style="shape=process;whiteSpace=wrap;html=1;backgroundOutline=1;" vertex="1" parent="1">
+          <mxGeometry x="610" y="445" width="130" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="mF9jJ3oc6lBVz3y6j7Zx-22" value="Protocol:&lt;br&gt;1, Worker asks for set of urls&lt;div&gt;2. Frontier responds with urls&lt;/div&gt;&lt;div&gt;3. Sends to crawler&lt;/div&gt;&lt;div&gt;4. Crawler sends back more urls to add to queue&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="510" y="190" width="120" height="200" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
