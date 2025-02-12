@@ -25,15 +25,23 @@ FetchContent_MakeAvailable(googletest)
 
 set(LIB_DIR "${CMAKE_SOURCE_DIR}/lib")
 
-add_library(PriorityQueue STATIC ${LIB_DIR}/PriorityQueue.cpp)
-target_include_directories(PriorityQueue PUBLIC ${LIB_DIR})
+add_library(PriorityQueue INTERFACE)
+target_include_directories(PriorityQueue INTERFACE ${LIB_DIR}/PriorityQueue)
+
+add_library(FrontierInterface STATIC ${LIB_DIR}/FrontierInterface/FrontierInterface.cpp)
+target_include_directories(FrontierInterface PUBLIC ${LIB_DIR}/FrontierInterface)
 
 add_executable(${THIS} src/Frontier.cpp)
-target_link_libraries(${THIS} PUBLIC PriorityQueue)
+target_link_libraries(${THIS} PUBLIC FrontierInterface)
+target_link_libraries(${THIS} PRIVATE PriorityQueue)
 
 add_executable(Tests tests/test.cpp)
 target_link_libraries(Tests PRIVATE PriorityQueue GTest::gtest_main)
 
+add_executable(FrontierInterfaceTests tests/FrontierInterfaceTests.cpp)
+target_link_libraries(FrontierInterfaceTests PRIVATE FrontierInterface GTest::gtest_main)
+
 include(GoogleTest)
 gtest_discover_tests(Tests)
+gtest_discover_tests(FrontierInterfaceTests)
 
