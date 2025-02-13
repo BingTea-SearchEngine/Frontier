@@ -29,7 +29,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(spdlog)
 
-set(LIB_DIR "${CMAKE_SOURCE_DIR}/lib")
+set(LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib")
 
 add_library(PriorityQueue INTERFACE)
 target_include_directories(PriorityQueue INTERFACE ${LIB_DIR}/PriorityQueue)
