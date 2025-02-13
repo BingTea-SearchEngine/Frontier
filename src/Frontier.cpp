@@ -96,7 +96,7 @@ void Frontier::start() {
 int Frontier::_handleClient(int clientSock) {
     spdlog::info(">>> Request Start (Client: {})", clientSock);
 
-    size_t messageLength = 0;
+    uint32_t messageLength = 0;
     int bytesReceived = 0;
     // Get message size
     bytesReceived += recv(clientSock, &messageLength, sizeof(messageLength), 0);
@@ -109,24 +109,26 @@ int Frontier::_handleClient(int clientSock) {
     }
 
     messageLength = ntohl(messageLength);
-    spdlog::info("Client {} with message length {}", clientSock, messageLength);
-    std::string message(messageLength, '\0');
-    // Get message
-    if (recv(clientSock, message.data(), messageLength, MSG_WAITALL) <= 0) {
-        spdlog::info("Error getting client message: " + std::to_string(clientSock));
-        close(clientSock);
-        FD_CLR(clientSock, &_masterSet);
-        return 0;
+    if (messageLength > 0) {
+        spdlog::info("Client {} with message length {}", clientSock, messageLength);
+        std::string message(messageLength, '\0');
+        // Get message
+        if (recv(clientSock, message.data(), messageLength, MSG_WAITALL) <= 0) {
+            spdlog::info("Error getting client message: " + std::to_string(clientSock));
+            close(clientSock);
+            FD_CLR(clientSock, &_masterSet);
+            return 0;
+        }
+        std::vector<std::string> received = FrontierInterface::Decode(message);
+        spdlog::info("Received {}", received);
     }
 
-    std::vector<std::string> received = FrontierInterface::Decode(message);
-    spdlog::info("Received {}", received);
     std::vector<std::string> urls = {"google.com", "wikipedia.com", "https://github.com/wbjin"};
-    spdlog::info("Sending {}", urls);
 
     // Send response back
     std::string response = FrontierInterface::Encode(urls);
-    int responseSize = htonl(response.size());
+    spdlog::info("Sending {} {}", response.size(), urls);
+    uint32_t responseSize = htonl(response.size());
     send(clientSock, &responseSize, sizeof(responseSize), 0);
     send(clientSock, response.data(), response.size(), 0);
     spdlog::info("<<< Request End (Client: {})", clientSock);
