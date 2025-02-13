@@ -19,9 +19,15 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/google/googletest.git
   GIT_TAG        release-1.11.0
 )
-
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
+
+FetchContent_Declare(
+  spdlog
+  GIT_REPOSITORY https://github.com/gabime/spdlog.git
+  GIT_TAG        v1.12.0
+)
+FetchContent_MakeAvailable(spdlog)
 
 set(LIB_DIR "${CMAKE_SOURCE_DIR}/lib")
 
@@ -32,7 +38,7 @@ add_library(FrontierInterface STATIC ${LIB_DIR}/FrontierInterface/FrontierInterf
 target_include_directories(FrontierInterface PUBLIC ${LIB_DIR}/FrontierInterface)
 
 add_executable(${THIS} src/Frontier.cpp)
-target_link_libraries(${THIS} PUBLIC FrontierInterface)
+target_link_libraries(${THIS} PUBLIC FrontierInterface spdlog::spdlog)
 target_link_libraries(${THIS} PRIVATE PriorityQueue)
 
 add_executable(Tests tests/test.cpp)

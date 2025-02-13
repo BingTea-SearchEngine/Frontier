@@ -1,12 +1,15 @@
 #include "Frontier.hpp"
 
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/fmt/bundled/ranges.h>
+
 Frontier::Frontier(std::string socketPath, int maxClients)
     : _socketPath(socketPath), MAX_CLIENTS(maxClients) {
-    cout << socketPath << " " << maxClients << endl;
     // Create the server socket
     _serverSock = socket(AF_UNIX, SOCK_STREAM, 0);
     if (_serverSock < 0) {
-        perror("Socket creation failed");
+        spdlog::error("Socket creation failed");
         exit(EXIT_FAILURE);
     }
 
@@ -19,13 +22,13 @@ Frontier::Frontier(std::string socketPath, int maxClients)
             sizeof(_serverAddr.sun_path) - 1);
     if (bind(_serverSock, (struct sockaddr*)&_serverAddr, sizeof(_serverAddr)) <
         0) {
-        perror("Bind failed");
+        spdlog::error("Bind failed");
         exit(EXIT_FAILURE);
     }
 
     // Listen from socket
     if (listen(_serverSock, MAX_CLIENTS) < 0) {
-        perror("Listen failed");
+        spdlog::error("Listen failed");
         exit(EXIT_FAILURE);
     }
 }
@@ -33,6 +36,10 @@ Frontier::Frontier(std::string socketPath, int maxClients)
 Frontier::~Frontier() {
     close(_serverSock);
     unlink(_socketPath.c_str());
+}
+
+std::string Frontier::getInfo() {
+    return "Listening on " + _socketPath + " with max client " + std::to_string(MAX_CLIENTS);
 }
 
 void Frontier::start() {
@@ -44,8 +51,7 @@ void Frontier::start() {
         _readFds = _masterSet;
         // Select blocks until new connection
         if (select(_maxFd + 1, &_readFds, nullptr, nullptr, nullptr) < 0) {
-            perror("select() failed");
-            break;
+            spdlog::error("select() failed");
         }
 
         // Accept new connections
@@ -56,10 +62,9 @@ void Frontier::start() {
                 accept(_serverSock, (struct sockaddr*)&clientAddr, &clientLen);
 
             if (clientSock < 0) {
-                perror("Accept failed");
+                spdlog::error("Accept failed");
             } else {
-                cout << "New client connected! Socket FD: " << clientSock
-                     << endl;
+                spdlog::info("==== New client connected: " + std::to_string(clientSock) + " ====");
                 FD_SET(clientSock, &_masterSet);
                 _clientSockets.push_back(clientSock);
                 _maxFd = std::max(_maxFd, clientSock);
@@ -69,6 +74,11 @@ void Frontier::start() {
         // Check for messages from client connections
         for (auto it = _clientSockets.begin(); it != _clientSockets.end();) {
             int clientSock = *it;
+
+            struct timeval timeout;
+            timeout.tv_sec = 5;  // 5 seconds timeout
+            timeout.tv_usec = 0;
+            setsockopt(clientSock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
 
             if (FD_ISSET(clientSock, &_readFds)) {
                 if (_handleClient(clientSock) <= 0) {
@@ -84,29 +94,49 @@ void Frontier::start() {
 }
 
 int Frontier::_handleClient(int clientSock) {
-    char buffer[256];
-    int bytesReceived = recv(clientSock, buffer, sizeof(buffer) - 1, 0);
+    spdlog::info(">>> Request Start (Client: {})", clientSock);
 
-    if (bytesReceived <= 0) {
-        // Client disconnected
-        cout << "Client disconnected: " << clientSock << endl;
+    size_t messageLength = 0;
+    int bytesReceived = 0;
+    // Get message size
+    bytesReceived += recv(clientSock, &messageLength, sizeof(messageLength), 0);
+    if (bytesReceived <= 0 ){
+        spdlog::info("<<< Request End (Client: {})", clientSock);
+        spdlog::info("==== Client disconnected: " + std::to_string(clientSock) + " ====");
         close(clientSock);
         FD_CLR(clientSock, &_masterSet);
-    } else {
-        std::vector<std::string> test = {"google.com", "wikipedia.com",
-                                         "umich.edu", "eecs.umich.edu"};
-        buffer[bytesReceived] = '\0';
-        cout << "Received from client " << clientSock << ": " << buffer << endl;
-
-        // Send response back
-        const char* response = "Hello from server";
-        send(clientSock, response, strlen(response), 0);
+        return 0;
     }
+
+    messageLength = ntohl(messageLength);
+    spdlog::info("Client {} with message length {}", clientSock, messageLength);
+    std::string message(messageLength, '\0');
+    // Get message
+    if (recv(clientSock, message.data(), messageLength, MSG_WAITALL) <= 0) {
+        spdlog::info("Error getting client message: " + std::to_string(clientSock));
+        close(clientSock);
+        FD_CLR(clientSock, &_masterSet);
+        return 0;
+    }
+
+    std::vector<std::string> received = FrontierInterface::Decode(message);
+    spdlog::info("Received {}", received);
+    std::vector<std::string> urls = {"google.com", "wikipedia.com", "https://github.com/wbjin"};
+    spdlog::info("Sending {}", urls);
+
+    // Send response back
+    std::string response = FrontierInterface::Encode(urls);
+    int responseSize = htonl(response.size());
+    send(clientSock, &responseSize, sizeof(responseSize), 0);
+    send(clientSock, response.data(), response.size(), 0);
+    spdlog::info("<<< Request End (Client: {})", clientSock);
     return bytesReceived;
 }
 
 int main() {
+    spdlog::info("======= Frontier Started =======");
     Frontier frontier;
+    spdlog::info(frontier.getInfo());
 
     frontier.start();
 }

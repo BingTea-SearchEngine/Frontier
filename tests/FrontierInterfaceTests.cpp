@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <vector>
 #include <string>
+#include <iostream>
 
 #include "FrontierInterface.hpp"
 
@@ -9,6 +10,7 @@ TEST(FrontierInterface, Basic) {
     
     std::string encoded = FrontierInterface::Encode(urls);
     
+    std::cout << encoded << std::endl;
     EXPECT_EQ(FrontierInterface::Decode(encoded), urls);
 }
 

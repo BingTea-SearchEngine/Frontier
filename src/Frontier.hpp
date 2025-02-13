@@ -17,6 +17,8 @@ class Frontier {
 public:
     Frontier(std::string socketPath = "/tmp/frontier", int MAX_CLIENTS = 10);
 
+    std::string getInfo();
+
     void start();
 
     ~Frontier();
