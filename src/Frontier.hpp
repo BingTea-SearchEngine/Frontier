@@ -24,7 +24,7 @@ public:
     ~Frontier();
 
 private:
-    PriorityQueue<std::string> _pq;
+    PriorityQueue _pq;
 
     std::vector<int> _clientSockets;
     struct sockaddr_un _serverAddr;

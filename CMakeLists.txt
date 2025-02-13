@@ -31,7 +31,7 @@ FetchContent_MakeAvailable(spdlog)
 
 set(LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib")
 
-add_library(PriorityQueue INTERFACE)
+add_library(PriorityQueue STATIC ${LIB_DIR}/PriorityQueue/PriorityQueue.cpp)
 target_include_directories(PriorityQueue INTERFACE ${LIB_DIR}/PriorityQueue)
 
 add_library(FrontierInterface STATIC ${LIB_DIR}/FrontierInterface/FrontierInterface.cpp)
@@ -46,8 +46,11 @@ target_link_libraries(Tests PRIVATE PriorityQueue GTest::gtest_main)
 
 add_executable(FrontierInterfaceTests tests/FrontierInterfaceTests.cpp)
 target_link_libraries(FrontierInterfaceTests PRIVATE FrontierInterface GTest::gtest_main)
+add_executable(PriorityQueueTests tests/PriorityQueue_test.cpp)
+target_link_libraries(PriorityQueueTests PRIVATE PriorityQueue GTest::gtest_main)
 
 include(GoogleTest)
 gtest_discover_tests(Tests)
 gtest_discover_tests(FrontierInterfaceTests)
+gtest_discover_tests(PriorityQueueTests)
 

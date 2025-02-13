@@ -2,17 +2,22 @@
 #pragma once
 
 #include <vector>
+#include <string>
 
-template<typename T>
 class PriorityQueue {
 public:
-    PriorityQueue() {}
+    PriorityQueue();
 
-    void push(T elm) {}
+    void push(std::string elm);
 
-    T pop() {return T();}
+    std::string pop();
 
-    std::vector<T> popN(size_t N) {return {};}
+    std::vector<std::string> popN(size_t N);
 
 private:
+    std::vector<std::string> data;
+
+    void siftUp(size_t i);
+    void siftDown(size_t i);
 };
+
