@@ -59,11 +59,13 @@ target_link_libraries(Tests PRIVATE PriorityQueue GTest::gtest_main)
 
 add_executable(FrontierInterfaceTests tests/FrontierInterfaceTests.cpp)
 target_link_libraries(FrontierInterfaceTests PRIVATE FrontierInterface GTest::gtest_main)
-add_executable(PriorityQueueTests tests/PriorityQueue_test.cpp)
+add_executable(PriorityQueueTests tests/PriorityQueueTests.cpp)
 target_link_libraries(PriorityQueueTests PRIVATE PriorityQueue GTest::gtest_main)
+add_executable(BloomFilterTests tests/BloomFilterTests.cpp)
+target_link_libraries(BloomFilterTests PRIVATE BloomFilter GTest::gtest_main)
 
 include(GoogleTest)
 gtest_discover_tests(Tests)
 gtest_discover_tests(FrontierInterfaceTests)
 gtest_discover_tests(PriorityQueueTests)
-
+gtest_discover_tests(BloomFilterTests)
