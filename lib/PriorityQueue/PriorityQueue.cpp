@@ -1,6 +1,6 @@
 #include "PriorityQueue.hpp"
-#include <stdexcept>
 #include <algorithm>
+#include <stdexcept>
 #include <utility>  // for std::move and std::swap
 
 PriorityQueue::PriorityQueue() {}

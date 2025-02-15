@@ -1,9 +1,9 @@
 // PriorityQueue_test.cpp
 #include "PriorityQueue.hpp"
-#include "gtest/gtest.h"
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include "gtest/gtest.h"
 
 // Test that a single push/pop works correctly.
 TEST(PriorityQueueTest, SinglePushPop) {
@@ -54,7 +54,7 @@ TEST(PriorityQueueTest, EmptyPopThrows) {
 
 // Optional: main() to run all tests.
 // You can omit this if linking against gtest_main.
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

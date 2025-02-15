@@ -8,7 +8,7 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -std=c++17 -g")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -std=c++17 -g -Wall -pedantic")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 enable_testing()
@@ -29,6 +29,10 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(spdlog)
 
+find_package(OpenSSL REQUIRED)
+message(STATUS "OpenSSL Include Dir: ${OPENSSL_INCLUDE_DIR}")
+message(STATUS "OpenSSL Libraries: ${OPENSSL_LIBRARIES}")
+
 set(LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib")
 
 add_library(PriorityQueue STATIC ${LIB_DIR}/PriorityQueue/PriorityQueue.cpp)
@@ -37,9 +41,18 @@ target_include_directories(PriorityQueue INTERFACE ${LIB_DIR}/PriorityQueue)
 add_library(FrontierInterface STATIC ${LIB_DIR}/FrontierInterface/FrontierInterface.cpp)
 target_include_directories(FrontierInterface PUBLIC ${LIB_DIR}/FrontierInterface)
 
+add_library(BloomFilter INTERFACE)
+target_include_directories(BloomFilter INTERFACE ${LIB_DIR}/BloomFilter ${OPENSSL_INCLUDE_DIR})
+if(TARGET OpenSSL::Crypto)
+    target_link_libraries(BloomFilter INTERFACE OpenSSL::Crypto)
+else()
+    message(FATAL_ERROR "OpenSSL::Crypto was not found!")
+endif()
+
 add_executable(${THIS} src/Frontier.cpp)
+target_include_directories(${THIS} PRIVATE ${LIB_DIR}/BloomFilter)
 target_link_libraries(${THIS} PUBLIC FrontierInterface spdlog::spdlog)
-target_link_libraries(${THIS} PRIVATE PriorityQueue)
+target_link_libraries(${THIS} PRIVATE PriorityQueue BloomFilter)
 
 add_executable(Tests tests/test.cpp)
 target_link_libraries(Tests PRIVATE PriorityQueue GTest::gtest_main)

@@ -1,11 +1,11 @@
 // PriorityQueue.hpp
 #pragma once
 
-#include <vector>
 #include <string>
+#include <vector>
 
 class PriorityQueue {
-public:
+   public:
     PriorityQueue();
 
     void push(std::string elm);
@@ -14,10 +14,9 @@ public:
 
     std::vector<std::string> popN(size_t N);
 
-private:
+   private:
     std::vector<std::string> data;
 
     void siftUp(size_t i);
     void siftDown(size_t i);
 };
-
