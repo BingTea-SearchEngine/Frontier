@@ -5,26 +5,31 @@
 #include <sys/un.h>
 #include <unistd.h>
 #include <iostream>
-#include <vector>
 #include <string>
+#include <vector>
 
+#include "BloomFilter.hpp"
 #include "FrontierInterface.hpp"
 #include "PriorityQueue.hpp"
 
 using std::cout, std::endl;
 
 class Frontier {
-public:
-    Frontier(std::string socketPath = "/tmp/frontier", int MAX_CLIENTS = 10);
+   public:
+    Frontier(std::string socketPath, int MAX_CLIENTS, uint32_t maxUrls,
+             std::string saveFile);
 
     std::string getInfo();
+
+    void recoverFilter(const char* filePath);
 
     void start();
 
     ~Frontier();
 
-private:
+   private:
     PriorityQueue _pq;
+    BloomFilter _filter;
 
     std::vector<int> _clientSockets;
     struct sockaddr_un _serverAddr;
@@ -35,6 +40,8 @@ private:
 
     const std::string _socketPath;
     const int MAX_CLIENTS = 10;
+
+    uint32_t numUrls = 0;
 
     int _handleClient(int clientSock);
 };

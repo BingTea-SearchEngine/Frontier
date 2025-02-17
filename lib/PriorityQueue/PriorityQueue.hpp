@@ -1,5 +1,4 @@
-#ifndef PRIORITYQUEUE_HPP
-#define PRIORITYQUEUE_HPP
+#pragma once
 
 #include <string>
 #include <vector>
@@ -30,5 +29,3 @@ private:
     void siftUp(size_t i);
     void siftDown(size_t i);
 };
-
-#endif

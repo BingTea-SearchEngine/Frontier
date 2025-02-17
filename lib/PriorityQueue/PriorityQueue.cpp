@@ -1,5 +1,4 @@
 #include "PriorityQueue.hpp"
-#include <stdexcept>
 #include <algorithm>
 #include <utility>
 
