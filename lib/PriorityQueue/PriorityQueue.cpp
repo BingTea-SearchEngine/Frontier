@@ -2,22 +2,27 @@
 #include <stdexcept>
 #include <algorithm>
 #include <utility>
-#include <string>
-#include <unordered_map>
 
-std::unordered_map<std::string, int> priorityMap = {
-    {".edu", 5},
-    {".gov", 4},
-    {".org", 3},
-    {".com", 2},
-    {".net", 1}
-};
+// Constructor: reserves capacity and initializes the priority map.
+PriorityQueue::PriorityQueue(size_t reserveCapacity) {
+    data.reserve(reserveCapacity);
+    // Default priorities for known TLDs.
+    priorityMap = {
+        {".edu", 5},
+        {".gov", 4},
+        {".org", 3},
+        {".com", 2},
+        {".net", 1}
+    };
+}
 
-int computePriority(const std::string &url) {
+// Computes the priority of a URL based on its top-level domain.
+int PriorityQueue::computePriority(const std::string &url) {
     size_t pos = url.rfind('.');
     if (pos != std::string::npos) {
         std::string tld = url.substr(pos);
         if (priorityMap.find(tld) == priorityMap.end()) {
+            // New TLDs start with a default priority of 0.
             priorityMap[tld] = 0;
         }
         return priorityMap[tld];
@@ -25,7 +30,8 @@ int computePriority(const std::string &url) {
     return 0;
 }
 
-void adjustPriority(const std::string &url) {
+// Adjusts the priority for the URL's TLD (e.g., after it is popped).
+void PriorityQueue::adjustPriority(const std::string &url) {
     size_t pos = url.rfind('.');
     if (pos != std::string::npos) {
         std::string tld = url.substr(pos);
@@ -36,15 +42,15 @@ void adjustPriority(const std::string &url) {
     }
 }
 
-bool compareURL(const std::string &a, const std::string &b) {
+// Returns true if URL 'a' has a higher priority than URL 'b'.
+// If priorities are equal, it compares them lexicographically.
+bool PriorityQueue::compareURL(const std::string &a, const std::string &b) {
     int pa = computePriority(a);
     int pb = computePriority(b);
     if (pa == pb)
         return a < b;
     return pa > pb;
 }
-
-PriorityQueue::PriorityQueue() {}
 
 void PriorityQueue::push(std::string elm) {
     data.push_back(std::move(elm));
@@ -57,6 +63,7 @@ std::string PriorityQueue::pop() {
 
     std::string top = std::move(data[0]);
 
+    // Adjust the priority of the popped URL.
     adjustPriority(top);
 
     data[0] = std::move(data.back());
@@ -107,4 +114,10 @@ void PriorityQueue::siftDown(size_t i) {
             break;
         }
     }
+}
+
+// New public accessor: returns the current priority for the given TLD.
+int PriorityQueue::getPriorityForTld(const std::string &tld) const {
+    auto it = priorityMap.find(tld);
+    return (it != priorityMap.end()) ? it->second : 0;
 }
