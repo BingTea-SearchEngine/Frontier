@@ -1,3 +1,8 @@
+// PriorityQueue_test.cpp
+#include <stdexcept>
+#include <string>
+#include <vector>
+#include "PriorityQueue.hpp"
 #include "gtest/gtest.h"
 #include "PriorityQueue.hpp"
 #include <vector>

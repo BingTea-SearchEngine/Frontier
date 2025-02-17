@@ -16,7 +16,7 @@ using std::cout, std::endl;
 
 class Frontier {
    public:
-    Frontier(std::string socketPath, int MAX_CLIENTS, uint32_t maxUrls,
+    Frontier(std::string socketPath, int MAX_CLIENTS, uint32_t maxUrls, int batchSize, std::string seedList, 
              std::string saveFile);
 
     std::string getInfo();
@@ -41,7 +41,10 @@ class Frontier {
     const std::string _socketPath;
     const int MAX_CLIENTS = 10;
 
-    uint32_t numUrls = 0;
+    uint32_t _numUrls = 0;
+    uint32_t _maxUrls = 0;
+
+    int _batchSize;
 
     int _handleClient(int clientSock);
 };
