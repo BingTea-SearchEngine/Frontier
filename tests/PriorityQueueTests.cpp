@@ -1,8 +1,8 @@
 // PriorityQueue_test.cpp
-#include "PriorityQueue.hpp"
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include "PriorityQueue.hpp"
 #include "gtest/gtest.h"
 
 // Test that a single push/pop works correctly.

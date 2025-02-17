@@ -10,10 +10,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -std=c++17 -g -Wall -pedantic")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 
 enable_testing()
 
 include(FetchContent)
+
 FetchContent_Declare(
   googletest
   GIT_REPOSITORY https://github.com/google/googletest.git
@@ -57,6 +60,7 @@ target_link_libraries(${THIS} PRIVATE PriorityQueue BloomFilter)
 add_executable(Tests tests/test.cpp)
 target_link_libraries(Tests PRIVATE PriorityQueue GTest::gtest_main)
 
+add_definitions(-DPROJECT_ROOT=\"${CMAKE_CURRENT_SOURCE_DIR}/\")
 add_executable(FrontierInterfaceTests tests/FrontierInterfaceTests.cpp)
 target_link_libraries(FrontierInterfaceTests PRIVATE FrontierInterface GTest::gtest_main)
 add_executable(PriorityQueueTests tests/PriorityQueueTests.cpp)

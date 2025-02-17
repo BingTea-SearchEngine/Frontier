@@ -1,14 +1,15 @@
 #include "Frontier.hpp"
 
+#include <fstream>
 #include <spdlog/fmt/bundled/ranges.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
 
-Frontier::Frontier(std::string socketPath, int maxClients, uint32_t maxUrls,
+Frontier::Frontier(std::string socketPath, int maxClients, uint32_t maxUrls, int batchSize, std::string seedList,
                    std::string saveFile)
     : _filter(BloomFilter(maxUrls, 0.001, saveFile)),
       _socketPath(socketPath),
-      MAX_CLIENTS(maxClients) {
+      MAX_CLIENTS(maxClients), _maxUrls(maxUrls), _batchSize(batchSize) {
     // Create the server socket
     _serverSock = socket(AF_UNIX, SOCK_STREAM, 0);
     if (_serverSock < 0) {
@@ -34,6 +35,18 @@ Frontier::Frontier(std::string socketPath, int maxClients, uint32_t maxUrls,
         spdlog::error("Listen failed");
         exit(EXIT_FAILURE);
     }
+
+    std::ifstream file(seedList);
+    if (!file) {
+        spdlog::error("Couldn't open {}", seedList);
+        exit(EXIT_FAILURE);
+    }
+
+    std::string url;
+    while (std::getline(file, url)) {
+        _pq.push(url);
+    }
+    file.close();
 }
 
 Frontier::~Frontier() {
@@ -56,7 +69,7 @@ void Frontier::start() {
     FD_SET(_serverSock, &_masterSet);
     _maxFd = _serverSock;
 
-    while (true) {
+    while (_numUrls < _maxUrls) {
         _readFds = _masterSet;
         // Select blocks until new connection
         if (select(_maxFd + 1, &_readFds, nullptr, nullptr, nullptr) < 0) {
@@ -101,6 +114,17 @@ void Frontier::start() {
                 ++it;
             }
         }
+        spdlog::info("{} urls served", _numUrls);
+    }
+
+    for (auto it = _clientSockets.begin(); it != _clientSockets.end(); ){
+            int clientSock = *it;
+        if (FD_ISSET(clientSock, &_readFds)) {
+            int message = 0;
+            send(clientSock, &message, sizeof(message), 0);
+            spdlog::info("Ending connection with {}", clientSock);
+        }
+        it++;
     }
 }
 
@@ -137,8 +161,8 @@ int Frontier::_handleClient(int clientSock) {
         spdlog::info("Received {}", received);
     }
 
-    std::vector<std::string> urls = {"google.com", "wikipedia.com",
-                                     "https://github.com/wbjin"};
+    std::vector<std::string> urls = _pq.popN(_batchSize);
+    _numUrls += urls.size();
 
     // Send response back
     std::string response = FrontierInterface::Encode(urls);
@@ -152,30 +176,35 @@ int Frontier::_handleClient(int clientSock) {
 
 void printUsage(const char* programName) {
     std::cerr << "Usage: " << programName
-              << " <socketPath> <maxClients> <maxUrls> <recoveryFile>\n"
+              << " <socketPath> <maxClients> <maxUrls> <batchSize> <seedList> <saveFile> <recoveryFile>\n"
               << "  <socketPath>   : Path to the Unix domain socket\n"
               << "  <maxClients>   : Maximum number of concurrent clients\n"
               << "  <maxUrls>      : Maximum number of URLs per client\n"
-              << "  [saveFile]     : (Optional) Path to the save file, "
+              << "  <batchSize>    : Number of urls to send to per worker per request\n"
+              << "  <seedList>     : Initial set of urls to start with\n"
+              << "  <saveFile>     : (Optional) Path to the save file, "
                  "defaults to checkpoint.bin\n"
               << "  <recoveryFile> : (Optional) Path to the recovery file\n";
 }
 
 int main(int argc, char** argv) {
-    if (argc > 6 || argc < 4) {
+    if (argc > 7 || argc < 5) {
         spdlog::error("Invalid arguments");
         printUsage(argv[0]);
         exit(EXIT_FAILURE);
     }
+
     std::string socketPath = std::string(argv[1]);
     int maxClients = std::stoi(argv[2]);
     int maxUrls = std::stoi(argv[3]);
-    const char* saveFile = (argc >= 5) ? argv[4] : "checkpoint.bin";
-    Frontier frontier(socketPath, maxClients, maxUrls, saveFile);
+    int batchSize = std::stoi(argv[4]);
+    std::string seedList = std::string(PROJECT_ROOT) + std::string(argv[5]);
+    const char* saveFile = (argc >= 6) ? argv[6] : "checkpoint.bin";
+    Frontier frontier(socketPath, maxClients, maxUrls, batchSize, seedList, saveFile);
     spdlog::info("======= Frontier Started =======");
     spdlog::info(frontier.getInfo());
-    if (argc == 6) {
-        frontier.recoverFilter(argv[5]);
+    if (argc == 7) {
+        frontier.recoverFilter(argv[6]);
     }
 
     frontier.start();
