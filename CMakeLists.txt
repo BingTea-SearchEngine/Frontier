@@ -42,7 +42,9 @@ add_library(PriorityQueue STATIC ${LIB_DIR}/PriorityQueue/PriorityQueue.cpp)
 target_include_directories(PriorityQueue INTERFACE ${LIB_DIR}/PriorityQueue)
 
 add_library(FrontierInterface STATIC ${LIB_DIR}/FrontierInterface/FrontierInterface.cpp)
+target_link_libraries(FrontierInterface PUBLIC spdlog::spdlog)
 target_include_directories(FrontierInterface PUBLIC ${LIB_DIR}/FrontierInterface)
+
 
 add_library(BloomFilter INTERFACE)
 target_include_directories(BloomFilter INTERFACE ${LIB_DIR}/BloomFilter ${OPENSSL_INCLUDE_DIR})
@@ -53,7 +55,6 @@ else()
 endif()
 
 add_executable(${THIS} src/Frontier.cpp)
-target_include_directories(${THIS} PRIVATE ${LIB_DIR}/BloomFilter)
 target_link_libraries(${THIS} PUBLIC FrontierInterface spdlog::spdlog)
 target_link_libraries(${THIS} PRIVATE PriorityQueue BloomFilter)
 
