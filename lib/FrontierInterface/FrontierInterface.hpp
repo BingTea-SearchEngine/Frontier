@@ -5,7 +5,8 @@
 
 enum class MessageType {
     ROBOTS,
-    URLS
+    URLS,
+    EMPTY,
 };
 
 const std::string MessageHeaders[] = {

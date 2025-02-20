@@ -6,6 +6,28 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
 
+Message receiveMessage(int clientSock) {
+    uint32_t messageLength = 0;
+    int bytesReceived = 0;
+    // Get message size
+    bytesReceived += recv(clientSock, &messageLength, sizeof(messageLength), 0);
+    if (bytesReceived <= 0) {
+        return Message{MessageType::EMPTY};
+    }
+
+    messageLength = ntohl(messageLength);
+    if (messageLength > 0) {
+        spdlog::info("Client {} with message length {}", clientSock,
+                     messageLength);
+        std::string message(messageLength, '\0');
+        if (recv(clientSock, message.data(), messageLength, MSG_WAITALL) <= 0) {
+            return Message{MessageType::EMPTY};
+        }
+        return FrontierInterface::Decode(message);
+    }
+    return Message{MessageType::EMPTY};
+}
+
 Frontier::Frontier(std::string socketPath, int maxClients, uint32_t maxUrls, int batchSize, std::string seedList,
                    std::string saveFile)
     : _filter(BloomFilter(maxUrls, 0.001, saveFile)),
@@ -106,7 +128,7 @@ void Frontier::start() {
                        sizeof(timeout));
 
             if (FD_ISSET(clientSock, &_readFds)) {
-                if (_handleClient(clientSock) <= 0) {
+                if (_handleClient(clientSock) == 0) {
                     it = _clientSockets.erase(it);
                 } else {
                     it++;
@@ -132,34 +154,25 @@ void Frontier::start() {
 int Frontier::_handleClient(int clientSock) {
     spdlog::info(">>> Request Start (Client: {})", clientSock);
 
-    uint32_t messageLength = 0;
-    int bytesReceived = 0;
-    // Get message size
-    bytesReceived += recv(clientSock, &messageLength, sizeof(messageLength), 0);
-    if (bytesReceived <= 0) {
+    auto [type, receivedUrls] = receiveMessage(clientSock);
+    if (type == MessageType::EMPTY) {
         spdlog::info("<<< Request End (Client: {})", clientSock);
         spdlog::info("==== Client disconnected: " + std::to_string(clientSock) +
                      " ====");
         close(clientSock);
         FD_CLR(clientSock, &_masterSet);
         return 0;
+    } else if (type == MessageType::ROBOTS) {
+        // Add to robots.txt set
+        // If robots, should expect another message with actual urls
+        auto [newType, newReceivedUrls] = receiveMessage(clientSock);
+        assert(newType == MessageType::URLS);
+        receivedUrls = newReceivedUrls;
     }
 
-    messageLength = ntohl(messageLength);
-    if (messageLength > 0) {
-        spdlog::info("Client {} with message length {}", clientSock,
-                     messageLength);
-        std::string message(messageLength, '\0');
-        // Get message
-        if (recv(clientSock, message.data(), messageLength, MSG_WAITALL) <= 0) {
-            spdlog::info("Error getting client message: " +
-                         std::to_string(clientSock));
-            close(clientSock);
-            FD_CLR(clientSock, &_masterSet);
-            return 0;
-        }
-        auto [type, urls] = FrontierInterface::Decode(message);
-        spdlog::info("Received {}", urls);
+    // Add to priority queue
+    for (auto url : receivedUrls) {
+        _pq.push(url);
     }
 
     std::vector<std::string> urls = _pq.popN(_batchSize);
@@ -172,7 +185,7 @@ int Frontier::_handleClient(int clientSock) {
     send(clientSock, &responseSize, sizeof(responseSize), 0);
     send(clientSock, response.data(), response.size(), 0);
     spdlog::info("<<< Request End (Client: {})", clientSock);
-    return bytesReceived;
+    return 1;
 }
 
 void printUsage(const char* programName) {
@@ -204,9 +217,11 @@ int main(int argc, char** argv) {
     Frontier frontier(socketPath, maxClients, maxUrls, batchSize, seedList, saveFile);
     spdlog::info("======= Frontier Started =======");
     spdlog::info(frontier.getInfo());
+
     if (argc == 7) {
         frontier.recoverFilter(argv[6]);
     }
 
     frontier.start();
+    spdlog::info("======= Frontier Finished =======");
 }

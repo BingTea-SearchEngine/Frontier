@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "BloomFilter.hpp"
+#include "FrontierInterface.hpp"
 #include "PriorityQueue.hpp"
 
 using std::cout, std::endl;
@@ -47,3 +48,5 @@ class Frontier {
 
     int _handleClient(int clientSock);
 };
+
+Message receiveMessage(int clientSock);
