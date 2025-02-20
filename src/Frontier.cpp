@@ -1,4 +1,5 @@
 #include "Frontier.hpp"
+#include "FrontierInterface.hpp"
 
 #include <fstream>
 #include <spdlog/fmt/bundled/ranges.h>
@@ -157,15 +158,15 @@ int Frontier::_handleClient(int clientSock) {
             FD_CLR(clientSock, &_masterSet);
             return 0;
         }
-        std::vector<std::string> received = FrontierInterface::Decode(message);
-        spdlog::info("Received {}", received);
+        auto [type, urls] = FrontierInterface::Decode(message);
+        spdlog::info("Received {}", urls);
     }
 
     std::vector<std::string> urls = _pq.popN(_batchSize);
     _numUrls += urls.size();
 
     // Send response back
-    std::string response = FrontierInterface::Encode(urls);
+    std::string response = FrontierInterface::Encode(Message{MessageType::URLS, urls});
     spdlog::info("Sending {} {}", response.size(), urls);
     uint32_t responseSize = htonl(response.size());
     send(clientSock, &responseSize, sizeof(responseSize), 0);

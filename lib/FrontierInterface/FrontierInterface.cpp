@@ -2,20 +2,32 @@
 
 #include <sstream>
 
-std::string FrontierInterface::Encode(const std::vector<std::string>& urls) {
+static std::string Encode(Message message) {
     std::ostringstream oss;
-    for (const auto& url : urls) {
+    oss << MessageHeaders[static_cast<int>(message.type)] << '\0';
+    for (const auto& url : message.urls) {
         uint32_t len = htonl(static_cast<uint32_t>(url.size()));
         oss.write(reinterpret_cast<char*>(&len), sizeof(len));
         oss.write(url.data(), url.size());
     }
-
     return oss.str();
 }
 
-std::vector<std::string> FrontierInterface::Decode(const std::string& encoded) {
+static Message Decode(const std::string& encoded) {
     std::vector<std::string> result;
     std::istringstream iss(encoded);
+    std::string header;
+    std::getline(iss, header, '\0');
+
+    MessageType messageType;
+    if (header == "ROBOTS") {
+        messageType = MessageType::ROBOTS;
+    } else if (header == "URLS") {
+        messageType = MessageType::URLS;
+    } else {
+        throw std::runtime_error("Invalid MessageType header");
+    }
+
     while (iss.peek() != EOF) {
         uint32_t len;
         iss.read(reinterpret_cast<char*>(&len), sizeof(len));
@@ -24,5 +36,5 @@ std::vector<std::string> FrontierInterface::Decode(const std::string& encoded) {
         iss.read(url.data(), len);
         result.push_back(url);
     }
-    return result;
+    return {messageType, result};
 }

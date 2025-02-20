@@ -8,7 +8,7 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -std=c++17 -Wall -pedantic")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall -pedantic")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
@@ -42,9 +42,7 @@ add_library(PriorityQueue STATIC ${LIB_DIR}/PriorityQueue/PriorityQueue.cpp)
 target_include_directories(PriorityQueue INTERFACE ${LIB_DIR}/PriorityQueue)
 
 add_library(FrontierInterface STATIC ${LIB_DIR}/FrontierInterface/FrontierInterface.cpp)
-target_link_libraries(FrontierInterface PUBLIC spdlog::spdlog)
 target_include_directories(FrontierInterface PUBLIC ${LIB_DIR}/FrontierInterface)
-
 
 add_library(BloomFilter INTERFACE)
 target_include_directories(BloomFilter INTERFACE ${LIB_DIR}/BloomFilter ${OPENSSL_INCLUDE_DIR})
