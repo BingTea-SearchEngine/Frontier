@@ -4,9 +4,9 @@
 #include <vector>
 
 enum class MessageType {
-    ROBOTS,
-    URLS,
-    EMPTY,
+    ROBOTS = 0,
+    URLS = 1,
+    EMPTY = 2,
 };
 
 const std::string MessageHeaders[] = {
