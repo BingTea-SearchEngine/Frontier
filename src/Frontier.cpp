@@ -17,15 +17,14 @@ Message receiveMessage(int clientSock) {
 
     messageLength = ntohl(messageLength);
     if (messageLength > 0) {
-        spdlog::info("Client {} with message length {}", clientSock,
-                     messageLength);
         std::string message(messageLength, '\0');
         if (recv(clientSock, message.data(), messageLength, MSG_WAITALL) <= 0) {
             return Message{MessageType::EMPTY};
         }
         return FrontierInterface::Decode(message);
     }
-    return Message{MessageType::EMPTY};
+    // Message length was 0, assume URLS
+    return Message{MessageType::URLS};
 }
 
 Frontier::Frontier(std::string socketPath, int maxClients, uint32_t maxUrls, int batchSize, std::string seedList,
@@ -164,6 +163,7 @@ int Frontier::_handleClient(int clientSock) {
         return 0;
     } else if (type == MessageType::ROBOTS) {
         // Add to robots.txt set
+        spdlog::info("Robots URLS: {}", receivedUrls);
         // If robots, should expect another message with actual urls
         auto [newType, newReceivedUrls] = receiveMessage(clientSock);
         assert(newType == MessageType::URLS);
@@ -180,7 +180,7 @@ int Frontier::_handleClient(int clientSock) {
 
     // Send response back
     std::string response = FrontierInterface::Encode(Message{MessageType::URLS, urls});
-    spdlog::info("Sending {} {}", response.size(), urls);
+    spdlog::info("Sending {}", urls);
     uint32_t responseSize = htonl(response.size());
     send(clientSock, &responseSize, sizeof(responseSize), 0);
     send(clientSock, response.data(), response.size(), 0);
