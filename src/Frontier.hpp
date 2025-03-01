@@ -48,3 +48,5 @@ class Frontier {
 
     int _handleClient(int clientSock);
 };
+
+Message receiveMessage(int clientSock);
