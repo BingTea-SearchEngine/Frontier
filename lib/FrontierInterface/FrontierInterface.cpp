@@ -25,7 +25,7 @@ Message FrontierInterface::Decode(const std::string& encoded) {
     } else if (header == "URLS") {
         messageType = MessageType::URLS;
     } else {
-        throw std::runtime_error("Invalid MessageType header");
+        throw std::runtime_error("Invalid MessageType header" + header);
     }
 
     while (iss.peek() != EOF) {

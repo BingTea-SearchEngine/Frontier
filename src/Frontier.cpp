@@ -66,7 +66,10 @@ Frontier::Frontier(std::string socketPath, int maxClients, uint32_t maxUrls, int
 
     std::string url;
     while (std::getline(file, url)) {
-        _pq.push(url);
+        if (!_filter.contains(url)) {
+            _filter.insert(url);
+            _pq.push(url);
+        }
     }
     file.close();
 }
@@ -172,7 +175,10 @@ int Frontier::_handleClient(int clientSock) {
 
     // Add to priority queue
     for (auto url : receivedUrls) {
-        _pq.push(url);
+        if (!_filter.contains(url)) {
+            _filter.insert(url);
+            _pq.push(url);
+        }
     }
 
     std::vector<std::string> urls = _pq.popN(_batchSize);
