@@ -14,13 +14,13 @@ const std::string MessageHeaders[] = {
     "URLS"
 };
 
-struct Message {
+struct FrontierMessage {
     MessageType type;
     std::vector<std::string> urls;
 };
 
 struct FrontierInterface {
-    static std::string Encode(Message message);
+    static std::string Encode(FrontierMessage message);
 
-    static Message Decode(const std::string& encoded);
+    static FrontierMessage Decode(const std::string& encoded);
 };

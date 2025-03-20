@@ -2,7 +2,7 @@
 
 #include <sstream>
 
-std::string FrontierInterface::Encode(Message message) {
+std::string FrontierInterface::Encode(FrontierMessage message) {
     std::ostringstream oss;
     oss << MessageHeaders[static_cast<int>(message.type)] << '\0';
     for (const auto& url : message.urls) {
@@ -13,7 +13,7 @@ std::string FrontierInterface::Encode(Message message) {
     return oss.str();
 }
 
-Message FrontierInterface::Decode(const std::string& encoded) {
+FrontierMessage FrontierInterface::Decode(const std::string& encoded) {
     std::vector<std::string> result;
     std::istringstream iss(encoded);
     std::string header;

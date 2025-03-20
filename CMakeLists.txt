@@ -32,6 +32,19 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(spdlog)
 
+FetchContent_Declare(
+    argparse
+    GIT_REPOSITORY https://github.com/p-ranav/argparse.git
+)
+FetchContent_MakeAvailable(argparse)
+
+FetchContent_Declare(
+    Gateway
+    GIT_REPOSITORY https://github.com/BingTea-SearchEngine/Gateway.git
+    GIT_TAG main
+)
+FetchContent_MakeAvailable(Gateway)
+
 find_package(OpenSSL REQUIRED)
 message(STATUS "OpenSSL Include Dir: ${OPENSSL_INCLUDE_DIR}")
 message(STATUS "OpenSSL Libraries: ${OPENSSL_LIBRARIES}")
@@ -52,9 +65,16 @@ else()
     message(FATAL_ERROR "OpenSSL::Crypto was not found!")
 endif()
 
+set(GATEWAY_SOURCE_DIR ${gateway_SOURCE_DIR})
+set(GATEWAY_INCLUDE_DIR "${gateway_SOURCE_DIR}/lib")
+message(STATUS "Gateway project source directory: ${GATEWAY_SOURCE_DIR}")
+message(STATUS "Gateway include directory: ${GATEWAY_INCLUDE_DIR}")
+
 add_executable(${THIS} src/Frontier.cpp)
-target_link_libraries(${THIS} PUBLIC FrontierInterface spdlog::spdlog)
-target_link_libraries(${THIS} PRIVATE PriorityQueue BloomFilter)
+target_link_libraries(${THIS} PUBLIC FrontierInterface spdlog::spdlog argparse GatewayServer PriorityQueue
+    BloomFilter)
+target_include_directories(${THIS} PRIVATE ${GATEWAY_INCLUDE_DIR})
+# target_link_libraries(${THIS} PRIVATE PriorityQueue BloomFilter)
 
 add_executable(Tests tests/test.cpp)
 target_link_libraries(Tests PRIVATE PriorityQueue GTest::gtest_main)

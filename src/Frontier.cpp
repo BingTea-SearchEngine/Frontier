@@ -1,63 +1,39 @@
 #include "Frontier.hpp"
 #include "FrontierInterface.hpp"
+#include "GatewayServer.hpp"
 
 #include <fstream>
 #include <spdlog/fmt/bundled/ranges.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
+#include <argparse/argparse.hpp>
 
-Message receiveMessage(int clientSock) {
+FrontierMessage receiveMessage(int clientSock) {
     uint32_t messageLength = 0;
     int bytesReceived = 0;
     // Get message size
     bytesReceived += recv(clientSock, &messageLength, sizeof(messageLength), 0);
     if (bytesReceived <= 0) {
-        return Message{MessageType::EMPTY};
+        return FrontierMessage{MessageType::EMPTY};
     }
 
     messageLength = ntohl(messageLength);
     if (messageLength > 0) {
         std::string message(messageLength, '\0');
         if (recv(clientSock, message.data(), messageLength, MSG_WAITALL) <= 0) {
-            return Message{MessageType::EMPTY};
+            return FrontierMessage{MessageType::EMPTY};
         }
         return FrontierInterface::Decode(message);
     }
     // Message length was 0, assume URLS
-    return Message{MessageType::URLS};
+    return FrontierMessage{MessageType::URLS};
 }
 
-Frontier::Frontier(std::string socketPath, int maxClients, uint32_t maxUrls, int batchSize, std::string seedList,
+Frontier::Frontier(int port, int maxClients, uint32_t maxUrls, int batchSize, std::string seedList,
                    std::string saveFile)
     : _filter(BloomFilter(maxUrls, 0.001, saveFile)),
-      _socketPath(socketPath),
-      MAX_CLIENTS(maxClients), _maxUrls(maxUrls), _batchSize(batchSize) {
-    // Create the server socket
-    _serverSock = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (_serverSock < 0) {
-        spdlog::error("Socket creation failed");
-        exit(EXIT_FAILURE);
-    }
-
-    // Remove file if it already exists
-    unlink(_socketPath.c_str());
-
-    // Bind with socket
-    _serverAddr.sun_family = AF_UNIX;
-    strncpy(_serverAddr.sun_path, _socketPath.c_str(),
-            sizeof(_serverAddr.sun_path) - 1);
-    if (bind(_serverSock, (struct sockaddr*)&_serverAddr, sizeof(_serverAddr)) <
-        0) {
-        spdlog::error("Bind failed");
-        exit(EXIT_FAILURE);
-    }
-
-    // Listen from socket
-    if (listen(_serverSock, MAX_CLIENTS) < 0) {
-        spdlog::error("Listen failed");
-        exit(EXIT_FAILURE);
-    }
-
+      _maxUrls(maxUrls), _batchSize(batchSize) {
+    Server server(port, maxClients);
     std::ifstream file(seedList);
     if (!file) {
         spdlog::error("Couldn't open {}", seedList);
@@ -77,12 +53,6 @@ Frontier::Frontier(std::string socketPath, int maxClients, uint32_t maxUrls, int
 Frontier::~Frontier() {
     close(_serverSock);
     unlink(_socketPath.c_str());
-}
-
-std::string Frontier::getInfo() {
-    return "Listening on " + _socketPath + " with max client " +
-           std::to_string(MAX_CLIENTS) + " saving to checkpoint file " +
-           _filter._saveFile;
 }
 
 void Frontier::recoverFilter(const char* filePath) {
@@ -185,7 +155,7 @@ int Frontier::_handleClient(int clientSock) {
     _numUrls += urls.size();
 
     // Send response back
-    std::string response = FrontierInterface::Encode(Message{MessageType::URLS, urls});
+    std::string response = FrontierInterface::Encode(FrontierMessage{MessageType::URLS, urls});
     spdlog::info("Sending {}", urls);
     uint32_t responseSize = htonl(response.size());
     send(clientSock, &responseSize, sizeof(responseSize), 0);
@@ -194,35 +164,52 @@ int Frontier::_handleClient(int clientSock) {
     return 1;
 }
 
-void printUsage(const char* programName) {
-    std::cerr << "Usage: " << programName
-              << " <socketPath> <maxClients> <maxUrls> <batchSize> <seedList> <saveFile> <recoveryFile>\n"
-              << "  <socketPath>   : Path to the Unix domain socket\n"
-              << "  <maxClients>   : Maximum number of concurrent clients\n"
-              << "  <maxUrls>      : Maximum number of URLs per client\n"
-              << "  <batchSize>    : Number of urls to send to per worker per request\n"
-              << "  <seedList>     : Initial set of urls to start with\n"
-              << "  <saveFile>     : (Optional) Path to the save file, "
-                 "defaults to checkpoint.bin\n"
-              << "  <recoveryFile> : (Optional) Path to the recovery file\n";
-}
-
 int main(int argc, char** argv) {
-    if (argc > 7 || argc < 5) {
-        spdlog::error("Invalid arguments");
-        printUsage(argv[0]);
-        exit(EXIT_FAILURE);
-    }
+    argparse::ArgumentParser program("frontier");
+    program.add_argument("-p", "--port")
+        .default_value(8080)
+        .help("Port to run server on")
+        .scan<'i', int>();
 
-    std::string socketPath = std::string(argv[1]);
-    int maxClients = std::stoi(argv[2]);
-    int maxUrls = std::stoi(argv[3]);
-    int batchSize = std::stoi(argv[4]);
-    std::string seedList = std::string(PROJECT_ROOT) + std::string(argv[5]);
-    const char* saveFile = (argc >= 6) ? argv[6] : "checkpoint.bin";
-    Frontier frontier(socketPath, maxClients, maxUrls, batchSize, seedList, saveFile);
+    program.add_argument("-m", "--maxclients")
+        .default_value(10)
+        .help("Max number of clients")
+        .scan<'i', int>();
+
+    program.add_argument("-n", "--numurls")
+        .default_value(1)
+        .help("Number of urls to serve")
+        .scan<'i', int>();
+
+    program.add_argument("-b", "--batchsize")
+        .default_value(4)
+        .help("Number of urls to send in one response")
+        .scan<'i', int>();
+
+    program.add_argument("-s", "--savefile")
+        .required()
+        .help("Path to save file");
+
+    program.add_argument("-l", "--seedlist")
+        .required()
+        .help("Path to seed list");
+
+    int port = program.get<int>("-p");
+    int maxClients = program.get<int>("-m");
+    int numUrls = program.get<int>("-n");
+    int batchSize = program.get<int>("-b");
+    std::string saveFile = program.get<std::string>("-s");
+    std::string seedList = program.get<std::string>("-l");
+
+    spdlog::info("Port {}", port);
+    spdlog::info("Max clients {}", maxClients);
+    spdlog::info("Number of urls {}", numUrls);
+    spdlog::info("Batch size {}", batchSize);
+    spdlog::info("Save file path {}", saveFile);
+    spdlog::info("Seed list file path {}", seedList);
+
     spdlog::info("======= Frontier Started =======");
-    spdlog::info(frontier.getInfo());
+    Frontier frontier(port, maxClients, numUrls, batchSize, seedList, saveFile);
 
     if (argc == 7) {
         frontier.recoverFilter(argv[6]);
