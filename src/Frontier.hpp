@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "GatewayServer.hpp"
 #include "BloomFilter.hpp"
 #include "FrontierInterface.hpp"
 #include "PriorityQueue.hpp"
@@ -26,17 +27,9 @@ class Frontier {
     ~Frontier();
 
    private:
+    Server _server;
     PriorityQueue _pq;
     BloomFilter _filter;
-
-    std::vector<int> _clientSockets;
-    struct sockaddr_un _serverAddr;
-    fd_set _masterSet;
-    fd_set _readFds;
-    int _serverSock;
-    int _maxFd;
-
-    const std::string _socketPath;
 
     uint32_t _numUrls = 0;
     uint32_t _maxUrls = 0;

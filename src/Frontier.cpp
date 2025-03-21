@@ -1,6 +1,5 @@
 #include "Frontier.hpp"
 #include "FrontierInterface.hpp"
-#include "GatewayServer.hpp"
 
 #include <fstream>
 #include <spdlog/fmt/bundled/ranges.h>
@@ -31,9 +30,8 @@ FrontierMessage receiveMessage(int clientSock) {
 
 Frontier::Frontier(int port, int maxClients, uint32_t maxUrls, int batchSize, std::string seedList,
                    std::string saveFile)
-    : _filter(BloomFilter(maxUrls, 0.001, saveFile)),
+    : _server(Server(port, maxClients)), _filter(BloomFilter(maxUrls, 0.001, saveFile)),
       _maxUrls(maxUrls), _batchSize(batchSize) {
-    Server server(port, maxClients);
     std::ifstream file(seedList);
     if (!file) {
         spdlog::error("Couldn't open {}", seedList);
@@ -51,8 +49,6 @@ Frontier::Frontier(int port, int maxClients, uint32_t maxUrls, int batchSize, st
 }
 
 Frontier::~Frontier() {
-    close(_serverSock);
-    unlink(_socketPath.c_str());
 }
 
 void Frontier::recoverFilter(const char* filePath) {
@@ -60,66 +56,11 @@ void Frontier::recoverFilter(const char* filePath) {
 }
 
 void Frontier::start() {
-    FD_ZERO(&_masterSet);
-    FD_SET(_serverSock, &_masterSet);
-    _maxFd = _serverSock;
-
     while (_numUrls < _maxUrls) {
-        _readFds = _masterSet;
-        // Select blocks until new connection
-        if (select(_maxFd + 1, &_readFds, nullptr, nullptr, nullptr) < 0) {
-            spdlog::error("select() failed");
+        std::vector<Message> messages = _server.GetMessagesBlocking();
+        for (auto m : messages) {
+            cout << m << endl;
         }
-
-        // Accept new connections
-        if (FD_ISSET(_serverSock, &_readFds)) {
-            struct sockaddr_un clientAddr;
-            socklen_t clientLen = sizeof(clientAddr);
-            int clientSock =
-                accept(_serverSock, (struct sockaddr*)&clientAddr, &clientLen);
-
-            if (clientSock < 0) {
-                spdlog::error("Accept failed");
-            } else {
-                spdlog::info("==== New client connected: " +
-                             std::to_string(clientSock) + " ====");
-                FD_SET(clientSock, &_masterSet);
-                _clientSockets.push_back(clientSock);
-                _maxFd = std::max(_maxFd, clientSock);
-            }
-        }
-
-        // Check for messages from client connections
-        for (auto it = _clientSockets.begin(); it != _clientSockets.end();) {
-            int clientSock = *it;
-
-            struct timeval timeout;
-            timeout.tv_sec = 5;  // 5 seconds timeout
-            timeout.tv_usec = 0;
-            setsockopt(clientSock, SOL_SOCKET, SO_RCVTIMEO, &timeout,
-                       sizeof(timeout));
-
-            if (FD_ISSET(clientSock, &_readFds)) {
-                if (_handleClient(clientSock) == 0) {
-                    it = _clientSockets.erase(it);
-                } else {
-                    it++;
-                }
-            } else {
-                ++it;
-            }
-        }
-        spdlog::info("{} urls served", _numUrls);
-    }
-
-    for (auto it = _clientSockets.begin(); it != _clientSockets.end(); ){
-            int clientSock = *it;
-        if (FD_ISSET(clientSock, &_readFds)) {
-            int message = 0;
-            send(clientSock, &message, sizeof(message), 0);
-            spdlog::info("Ending connection with {}", clientSock);
-        }
-        it++;
     }
 }
 
@@ -132,7 +73,6 @@ int Frontier::_handleClient(int clientSock) {
         spdlog::info("==== Client disconnected: " + std::to_string(clientSock) +
                      " ====");
         close(clientSock);
-        FD_CLR(clientSock, &_masterSet);
         return 0;
     } else if (type == MessageType::ROBOTS) {
         // Add to robots.txt set
@@ -187,12 +127,19 @@ int main(int argc, char** argv) {
         .scan<'i', int>();
 
     program.add_argument("-s", "--savefile")
-        .required()
+        .default_value("./frontier_save.txt")
         .help("Path to save file");
 
     program.add_argument("-l", "--seedlist")
-        .required()
         .help("Path to seed list");
+
+    try {
+        program.parse_args(argc, argv);
+    } catch (const std::exception& err) {
+        std::cerr << err.what() << std::endl;
+        std::cerr << program;
+        std::exit(1);
+    }
 
     int port = program.get<int>("-p");
     int maxClients = program.get<int>("-m");

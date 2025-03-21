@@ -11,7 +11,8 @@ enum class MessageType {
 
 const std::string MessageHeaders[] = {
     "ROBOTS",
-    "URLS"
+    "URLS",
+    "EMPTY"
 };
 
 struct FrontierMessage {
