@@ -10,11 +10,10 @@ class BloomFilter {
    public:
     BloomFilter(int num_objects, double false_positive_rate,
                 std::string saveFile)
-        : bits(-(num_objects * std::log(false_positive_rate)) /
+        : _saveFile(saveFile), bits(-(num_objects * std::log(false_positive_rate)) /
                std::pow((std::log(2)), 2)),
           numHashes(static_cast<float>(bits) / num_objects * std::log(2)),
-          bloom(bits),
-          _saveFile(saveFile) {
+          bloom(bits) {
         // Determine the size of bits of our data vector, and resize.
 
         // Determine number of hash functions to use.

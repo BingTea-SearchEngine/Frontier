@@ -82,6 +82,10 @@ std::vector<std::string> PriorityQueue::popN(size_t N) {
     return result;
 }
 
+size_t PriorityQueue::size() {
+    return data.size();
+}
+
 void PriorityQueue::siftUp(size_t i) {
     while (i > 0) {
         size_t parent = (i - 1) / 2;
@@ -120,3 +124,4 @@ int PriorityQueue::getPriorityForTld(const std::string &tld) const {
     auto it = priorityMap.find(tld);
     return (it != priorityMap.end()) ? it->second : 0;
 }
+

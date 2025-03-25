@@ -2,7 +2,10 @@
 
 #include <sstream>
 
-std::string FrontierInterface::Encode(Message message) {
+std::string FrontierInterface::Encode(FrontierMessage message) {
+    if (static_cast<int>(message.type) < 0 || static_cast<int>(message.type) > 3) {
+        throw std::runtime_error("Invalid Message Type header");
+    }
     std::ostringstream oss;
     oss << MessageHeaders[static_cast<int>(message.type)] << '\0';
     for (const auto& url : message.urls) {
@@ -13,17 +16,21 @@ std::string FrontierInterface::Encode(Message message) {
     return oss.str();
 }
 
-Message FrontierInterface::Decode(const std::string& encoded) {
+FrontierMessage FrontierInterface::Decode(const std::string& encoded) {
     std::vector<std::string> result;
     std::istringstream iss(encoded);
     std::string header;
     std::getline(iss, header, '\0');
 
-    MessageType messageType;
+    FrontierMessageType messageType;
     if (header == "ROBOTS") {
-        messageType = MessageType::ROBOTS;
+        messageType = FrontierMessageType::ROBOTS;
     } else if (header == "URLS") {
-        messageType = MessageType::URLS;
+        messageType = FrontierMessageType::URLS;
+    } else if (header == "START") {
+        messageType = FrontierMessageType::START;
+    } else if (header == "END") {
+        messageType = FrontierMessageType::END;
     } else {
         throw std::runtime_error("Invalid MessageType header" + header);
     }
