@@ -36,7 +36,5 @@ class Frontier {
 
     int _batchSize;
 
-    int _handleClient(int clientSock);
+    FrontierMessage _handleMessage(FrontierMessage msg);
 };
-
-FrontierMessage receiveMessage(int clientSock);

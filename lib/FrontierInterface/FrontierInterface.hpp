@@ -1,23 +1,58 @@
 #pragma once
 
+#include <iostream>
 #include <string>
 #include <vector>
 
-enum class MessageType {
-    ROBOTS = 0,
-    URLS = 1,
-    EMPTY = 2,
+enum class FrontierMessageType {
+    START = 0,
+    END = 1,
+    URLS = 2,
+    ROBOTS = 3,
 };
 
 const std::string MessageHeaders[] = {
-    "ROBOTS",
+    "START",
+    "END",
     "URLS",
-    "EMPTY"
+    "ROBOTS",
 };
 
 struct FrontierMessage {
-    MessageType type;
+    FrontierMessageType type;
     std::vector<std::string> urls;
+
+    friend std::ostream& operator<<(std::ostream& os, const FrontierMessage& m) {
+        os << "FrontierMessage { type=";
+
+        switch (m.type) {
+            case FrontierMessageType::ROBOTS:
+                os << "ROBOTS";
+                break;
+            case FrontierMessageType::URLS:
+                os << "URLS";
+                break;
+            case FrontierMessageType::START:
+                os << "START";
+                break;
+            case FrontierMessageType::END:
+                os << "START";
+                break;
+            default:
+                os << "UNKNOWN";
+                break;
+        }
+
+        os << ", urls=[";
+        for (size_t i = 0; i < m.urls.size(); ++i) {
+            os << "\"" << m.urls[i] << "\"";
+            if (i != m.urls.size() - 1) {
+                os << ", ";
+            }
+        }
+        os << "] }";
+        return os;
+    }
 };
 
 struct FrontierInterface {

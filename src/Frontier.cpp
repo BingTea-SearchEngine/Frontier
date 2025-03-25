@@ -7,27 +7,6 @@
 #include <spdlog/spdlog.h>
 #include <argparse/argparse.hpp>
 
-FrontierMessage receiveMessage(int clientSock) {
-    uint32_t messageLength = 0;
-    int bytesReceived = 0;
-    // Get message size
-    bytesReceived += recv(clientSock, &messageLength, sizeof(messageLength), 0);
-    if (bytesReceived <= 0) {
-        return FrontierMessage{MessageType::EMPTY};
-    }
-
-    messageLength = ntohl(messageLength);
-    if (messageLength > 0) {
-        std::string message(messageLength, '\0');
-        if (recv(clientSock, message.data(), messageLength, MSG_WAITALL) <= 0) {
-            return FrontierMessage{MessageType::EMPTY};
-        }
-        return FrontierInterface::Decode(message);
-    }
-    // Message length was 0, assume URLS
-    return FrontierMessage{MessageType::URLS};
-}
-
 Frontier::Frontier(int port, int maxClients, uint32_t maxUrls, int batchSize, std::string seedList,
                    std::string saveFile)
     : _server(Server(port, maxClients)), _filter(BloomFilter(maxUrls, 0.001, saveFile)),
@@ -59,32 +38,47 @@ void Frontier::start() {
     while (_numUrls < _maxUrls) {
         std::vector<Message> messages = _server.GetMessagesBlocking();
         for (auto m : messages) {
-            cout << m << endl;
+            spdlog::info("Request from {}:{}", m.senderIp, m.senderPort);
+
+            FrontierMessage decodedMessage = FrontierInterface::Decode(m.msg);
+            spdlog::info(decodedMessage.urls);
+            FrontierMessage response = _handleMessage(decodedMessage);
+
+            Message msg;
+            msg.receiverSock = m.senderSock;
+            msg.msg = FrontierInterface::Encode(response);
+
+            _server.SendMessage(msg);
+        }
+        spdlog::info("Served {} out of {}", _numUrls, _maxUrls);
+        spdlog::info("Frontier size: {}", _pq.size());
+    }
+
+    while (true) {
+        std::vector<Message> messages = _server.GetMessagesBlocking();
+        for (auto m : messages) {
+            spdlog::info("Request from {}:{}. Sending END message back", m.senderIp, m.senderPort);
+
+            FrontierMessage endMessage{FrontierMessageType::END, {}};
+            Message msg;
+            msg.receiverSock = m.senderSock;
+            msg.msg = FrontierInterface::Encode(endMessage);
+
+            _server.SendMessage(msg);
         }
     }
 }
 
-int Frontier::_handleClient(int clientSock) {
-    spdlog::info(">>> Request Start (Client: {})", clientSock);
-
-    auto [type, receivedUrls] = receiveMessage(clientSock);
-    if (type == MessageType::EMPTY) {
-        spdlog::info("<<< Request End (Client: {})", clientSock);
-        spdlog::info("==== Client disconnected: " + std::to_string(clientSock) +
-                     " ====");
-        close(clientSock);
-        return 0;
-    } else if (type == MessageType::ROBOTS) {
+FrontierMessage Frontier::_handleMessage(FrontierMessage msg) {
+    if (msg.type == FrontierMessageType::START) {
+    } else if (msg.type == FrontierMessageType::ROBOTS) {
         // Add to robots.txt set
-        spdlog::info("Robots URLS: {}", receivedUrls);
-        // If robots, should expect another message with actual urls
-        auto [newType, newReceivedUrls] = receiveMessage(clientSock);
-        assert(newType == MessageType::URLS);
-        receivedUrls = newReceivedUrls;
+        spdlog::info("Robots URLS: {}", msg.urls);
+        return FrontierMessage{FrontierMessageType::URLS, {}};
     }
 
     // Add to priority queue
-    for (auto url : receivedUrls) {
+    for (auto url : msg.urls) {
         if (!_filter.contains(url)) {
             _filter.insert(url);
             _pq.push(url);
@@ -94,14 +88,7 @@ int Frontier::_handleClient(int clientSock) {
     std::vector<std::string> urls = _pq.popN(_batchSize);
     _numUrls += urls.size();
 
-    // Send response back
-    std::string response = FrontierInterface::Encode(FrontierMessage{MessageType::URLS, urls});
-    spdlog::info("Sending {}", urls);
-    uint32_t responseSize = htonl(response.size());
-    send(clientSock, &responseSize, sizeof(responseSize), 0);
-    send(clientSock, response.data(), response.size(), 0);
-    spdlog::info("<<< Request End (Client: {})", clientSock);
-    return 1;
+    return FrontierMessage{FrontierMessageType::URLS, urls};
 }
 
 int main(int argc, char** argv) {
@@ -131,6 +118,7 @@ int main(int argc, char** argv) {
         .help("Path to save file");
 
     program.add_argument("-l", "--seedlist")
+        .required()
         .help("Path to seed list");
 
     try {

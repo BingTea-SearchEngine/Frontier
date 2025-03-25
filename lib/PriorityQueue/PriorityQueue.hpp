@@ -15,6 +15,8 @@ public:
 
     int getPriorityForTld(const std::string &tld) const;
 
+    size_t size();
+
 private:
     std::vector<std::string> data;
 
