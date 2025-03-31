@@ -1,7 +1,5 @@
 #include "Frontier.hpp"
-#include "FrontierInterface.hpp"
 
-#include <fstream>
 #include <spdlog/fmt/bundled/ranges.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
@@ -35,6 +33,7 @@ void Frontier::recoverFilter(const char* filePath) {
 }
 
 void Frontier::start() {
+    auto startTime = std::chrono::steady_clock::now();
     while (_numUrls < _maxUrls) {
         std::vector<Message> messages = _server.GetMessagesBlocking();
         for (auto m : messages) {
@@ -50,8 +49,18 @@ void Frontier::start() {
 
             _server.SendMessage(msg);
         }
+        auto now = std::chrono::steady_clock::now();
+        double elapsedSeconds = std::chrono::duration_cast<std::chrono::duration<double>>(now - startTime).count();
+        double elapsedMinutes = elapsedSeconds / 60.0;
+
         spdlog::info("Served {} out of {}", _numUrls, _maxUrls);
         spdlog::info("Frontier size: {}", _pq.size());
+
+        if (elapsedSeconds > 0) {
+            double urlsPerSecond = _numUrls / elapsedSeconds;
+            spdlog::info("Elapsed time: {:.2f} minutes", elapsedMinutes);
+            spdlog::info("{:.2f} URLs/second", urlsPerSecond);
+        }
     }
 
     while (true) {
@@ -69,6 +78,17 @@ void Frontier::start() {
     }
 }
 
+std::string trim(const std::string& str) {
+    auto start = std::find_if_not(str.begin(), str.end(),
+                                  [](unsigned char c) { return std::isspace(c); });
+
+    auto end = std::find_if_not(str.rbegin(), str.rend(),
+                                [](unsigned char c) { return std::isspace(c); }).base();
+
+    if (start >= end) return "";
+    return std::string(start, end);
+}
+
 FrontierMessage Frontier::_handleMessage(FrontierMessage msg) {
     if (msg.type == FrontierMessageType::START) {
     } else if (msg.type == FrontierMessageType::ROBOTS) {
@@ -79,9 +99,10 @@ FrontierMessage Frontier::_handleMessage(FrontierMessage msg) {
 
     // Add to priority queue
     for (auto url : msg.urls) {
-        if (!_filter.contains(url)) {
-            _filter.insert(url);
-            _pq.push(url);
+        std::string cleaned = trim(url);
+        if (cleaned != "" && !_filter.contains(cleaned)) {
+            _filter.insert(cleaned);
+            _pq.push(cleaned);
         }
     }
 

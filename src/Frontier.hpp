@@ -7,6 +7,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <fstream>
+#include <chrono>
 
 #include "GatewayServer.hpp"
 #include "BloomFilter.hpp"
