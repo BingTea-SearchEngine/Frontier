@@ -38,14 +38,11 @@ void Frontier::_checkpoint() {
         size_t len = url.size();
         saveFile.write(reinterpret_cast<char*>(&len), sizeof(len));
         saveFile.write(url.data(), len);
-        cout << url << endl;
     }
 
     // Write filter attributes
     saveFile.write(reinterpret_cast<char*>(&_filter.bits), sizeof(_filter.bits));
     saveFile.write(reinterpret_cast<char*>(&_filter.numHashes), sizeof(_filter.numHashes));
-    cout << _filter.bits << endl;
-    cout << _filter.numHashes << endl;
     
     // Write size of filter
     size_t filterSize = _filter.bloom.size();
@@ -72,15 +69,12 @@ void Frontier::recoverFilter(std::string filePath) {
         saveFile.read(reinterpret_cast<char*>(&len), sizeof(len));
         _pq.data[i].resize(len);
         saveFile.read(_pq.data[i].data(), len);
-        cout << _pq.data[i] << endl;
     }
 
     size_t bits;
     size_t numHashes;
     saveFile.read(reinterpret_cast<char*>(&bits), sizeof(bits));
     saveFile.read(reinterpret_cast<char*>(&numHashes), sizeof(numHashes));
-    cout << bits << endl;
-    cout << numHashes << endl;
 
     size_t filterSize = 0;
     saveFile.read(reinterpret_cast<char*>(&filterSize), sizeof(filterSize));
