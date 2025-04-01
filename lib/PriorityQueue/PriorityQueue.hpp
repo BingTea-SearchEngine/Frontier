@@ -18,6 +18,8 @@ public:
     size_t size();
 
 private:
+    friend class Frontier;
+
     std::vector<std::string> data;
 
     std::unordered_map<std::string, int> priorityMap;
