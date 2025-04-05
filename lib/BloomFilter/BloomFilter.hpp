@@ -8,9 +8,8 @@
 
 class BloomFilter {
    public:
-    BloomFilter(int num_objects, double false_positive_rate,
-                std::string saveFile)
-        : _saveFile(saveFile), bits(-(num_objects * std::log(false_positive_rate)) /
+    BloomFilter(int num_objects, double false_positive_rate)
+        : bits(-(num_objects * std::log(false_positive_rate)) /
                std::pow((std::log(2)), 2)),
           numHashes(static_cast<float>(bits) / num_objects * std::log(2)),
           bloom(bits) {
@@ -50,10 +49,9 @@ class BloomFilter {
         return true;
     }
 
-    std::string _saveFile;
-
    private:
     // Add any private member variables that may be neccessary.
+    friend class Frontier;
 
     size_t bits;
     size_t numHashes;
