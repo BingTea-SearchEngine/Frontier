@@ -19,15 +19,14 @@ public:
 
 private:
     std::vector<std::string> data;
-
     std::unordered_map<std::string, int> priorityMap;
 
+    // Add this private member:
+    size_t maxCapacity;
+
     int computePriority(const std::string &url);
-
     void adjustPriority(const std::string &url);
-
     bool compareURL(const std::string &a, const std::string &b);
-
     void siftUp(size_t i);
     void siftDown(size_t i);
 };

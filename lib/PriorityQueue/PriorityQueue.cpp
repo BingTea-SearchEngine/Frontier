@@ -3,7 +3,9 @@
 #include <utility>
 
 // Constructor: reserves capacity and initializes the priority map.
-PriorityQueue::PriorityQueue(size_t reserveCapacity) {
+PriorityQueue::PriorityQueue(size_t reserveCapacity)
+    : maxCapacity(reserveCapacity) // store the max capacity
+{
     data.reserve(reserveCapacity);
     // Default priorities for known TLDs.
     priorityMap = {
@@ -54,6 +56,10 @@ bool PriorityQueue::compareURL(const std::string &a, const std::string &b) {
 void PriorityQueue::push(std::string elm) {
     data.push_back(std::move(elm));
     siftUp(data.size() - 1);
+
+    if (data.size() > maxCapacity) {
+        data.pop_back();
+    }
 }
 
 std::string PriorityQueue::pop() {
@@ -124,4 +130,3 @@ int PriorityQueue::getPriorityForTld(const std::string &tld) const {
     auto it = priorityMap.find(tld);
     return (it != priorityMap.end()) ? it->second : 0;
 }
-
