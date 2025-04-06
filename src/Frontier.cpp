@@ -1,11 +1,15 @@
 #include "Frontier.hpp"
 
-
-Frontier::Frontier(int port, int maxClients, uint32_t maxUrls, int batchSize, std::string seedList,
-                   std::string saveFileName, int checkpointFrequency)
-    : _server(Server(port, maxClients)), _filter(BloomFilter(maxUrls, 0.001)),
-    _saveFileName(saveFileName),
-    _maxUrls(maxUrls), _batchSize(batchSize), _checkpointFrequency(checkpointFrequency) {
+Frontier::Frontier(int port, int maxClients, uint32_t maxUrls, int batchSize,
+                   std::string seedList, std::string saveFileName,
+                   int checkpointFrequency)
+    : _server(Server(port, maxClients)),
+      _filter(BloomFilter(maxUrls, 0.001)),
+      _saveFileName(saveFileName),
+      _maxUrls(maxUrls),
+      _batchSize(batchSize),
+      _checkpointFrequency(checkpointFrequency),
+      _lastCheckpoint(0) {
 
     std::ifstream file(seedList);
     if (!file) {
@@ -23,8 +27,7 @@ Frontier::Frontier(int port, int maxClients, uint32_t maxUrls, int batchSize, st
     file.close();
 }
 
-Frontier::~Frontier() {
-}
+Frontier::~Frontier() {}
 
 void Frontier::_checkpoint() {
     spdlog::info("Checkpointing");
@@ -41,9 +44,11 @@ void Frontier::_checkpoint() {
     }
 
     // Write filter attributes
-    saveFile.write(reinterpret_cast<char*>(&_filter.bits), sizeof(_filter.bits));
-    saveFile.write(reinterpret_cast<char*>(&_filter.numHashes), sizeof(_filter.numHashes));
-    
+    saveFile.write(reinterpret_cast<char*>(&_filter.bits),
+                   sizeof(_filter.bits));
+    saveFile.write(reinterpret_cast<char*>(&_filter.numHashes),
+                   sizeof(_filter.numHashes));
+
     // Write size of filter
     size_t filterSize = _filter.bloom.size();
     saveFile.write(reinterpret_cast<char*>(&filterSize), sizeof(filterSize));
@@ -108,7 +113,10 @@ void Frontier::start() {
             _server.SendMessage(msg);
         }
         auto now = std::chrono::steady_clock::now();
-        double elapsedSeconds = std::chrono::duration_cast<std::chrono::duration<double>>(now - startTime).count();
+        double elapsedSeconds =
+            std::chrono::duration_cast<std::chrono::duration<double>>(now -
+                                                                      startTime)
+                .count();
         double elapsedMinutes = elapsedSeconds / 60.0;
 
         spdlog::info("Served {} out of {}", _numUrls, _maxUrls);
@@ -120,15 +128,17 @@ void Frontier::start() {
             spdlog::info("{:.2f} URLs/second", urlsPerSecond);
         }
 
-        if (_numUrls % _checkpointFrequency == 0) {
+        if (_numUrls >= _lastCheckpoint + _checkpointFrequency) {
             _checkpoint();
+            _lastCheckpoint += _numUrls;
         }
     }
 
     while (true) {
         std::vector<Message> messages = _server.GetMessagesBlocking();
         for (auto m : messages) {
-            spdlog::info("Request from {}:{}. Sending END message back", m.senderIp, m.senderPort);
+            spdlog::info("Request from {}:{}. Sending END message back",
+                         m.senderIp, m.senderPort);
 
             FrontierMessage endMessage{FrontierMessageType::END, {}};
             Message msg;
@@ -141,13 +151,16 @@ void Frontier::start() {
 }
 
 std::string trim(const std::string& str) {
-    auto start = std::find_if_not(str.begin(), str.end(),
-                                  [](unsigned char c) { return std::isspace(c); });
+    auto start = std::find_if_not(str.begin(), str.end(), [](unsigned char c) {
+        return std::isspace(c);
+    });
 
-    auto end = std::find_if_not(str.rbegin(), str.rend(),
-                                [](unsigned char c) { return std::isspace(c); }).base();
+    auto end = std::find_if_not(str.rbegin(), str.rend(), [](unsigned char c) {
+                   return std::isspace(c);
+               }).base();
 
-    if (start >= end) return "";
+    if (start >= end)
+        return "";
     return std::string(start, end);
 }
 
@@ -178,7 +191,6 @@ int main(int argc, char** argv) {
     argparse::ArgumentParser program("frontier");
     program.add_argument("-p", "--port")
         .default_value(8080)
-
         .help("Port to run server on")
         .scan<'i', int>();
 
@@ -241,7 +253,8 @@ int main(int argc, char** argv) {
     spdlog::info("Checkpoint frequency {}", checkpointFrequency);
 
     spdlog::info("======= Frontier Started =======");
-    Frontier frontier(port, maxClients, numUrls, batchSize, seedList, saveFile, checkpointFrequency);
+    Frontier frontier(port, maxClients, numUrls, batchSize, seedList, saveFile,
+                      checkpointFrequency);
 
     if (recover) {
         frontier.recoverFilter(saveFile);
