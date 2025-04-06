@@ -3,7 +3,13 @@
 #include <utility>
 
 // Constructor: reserves capacity and initializes the priority map.
+<<<<<<< Updated upstream
 PriorityQueue::PriorityQueue(size_t reserveCapacity) {
+=======
+PriorityQueue::PriorityQueue(size_t reserveCapacity)
+    : maxCapacity(reserveCapacity)  // store the max capacity
+{
+>>>>>>> Stashed changes
     data.reserve(reserveCapacity);
     // Default priorities for known TLDs.
     priorityMap = {

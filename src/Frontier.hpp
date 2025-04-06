@@ -22,7 +22,7 @@ class Frontier {
    public:
     Frontier(int port, int MAX_CLIENTS, uint32_t maxUrls, int batchSize,
              std::string seedList, std::string saveFile,
-             int checkpointFrequency);
+             int checkpointFrequency, int maxFrontierSize);
 
     void recoverFilter(std::string filePath);
 
