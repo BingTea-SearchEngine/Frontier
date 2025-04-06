@@ -7,7 +7,7 @@ Frontier is an application intended for use along with crawler workers. Frontier
 mkdir build && cd build
 cmake ..
 make
-./frontier
+./frontier -l ../seedlist.txt -n 10
 ```
 
 ## Architecture

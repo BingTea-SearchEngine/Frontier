@@ -1,11 +1,11 @@
 #pragma once
 
 #include <string>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 class PriorityQueue {
-public:
+   public:
     explicit PriorityQueue(size_t reserveCapacity = 100);
 
     void push(std::string elm);
@@ -13,11 +13,13 @@ public:
 
     std::vector<std::string> popN(size_t N);
 
-    int getPriorityForTld(const std::string &tld) const;
+    int getPriorityForTld(const std::string& tld) const;
 
     size_t size();
 
-private:
+   private:
+    friend class Frontier;
+
     std::vector<std::string> data;
     std::unordered_map<std::string, int> priorityMap;
 

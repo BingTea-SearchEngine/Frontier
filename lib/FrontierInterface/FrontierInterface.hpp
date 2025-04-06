@@ -1,5 +1,6 @@
 #pragma once
 
+#include <arpa/inet.h>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -22,7 +23,8 @@ struct FrontierMessage {
     FrontierMessageType type;
     std::vector<std::string> urls;
 
-    friend std::ostream& operator<<(std::ostream& os, const FrontierMessage& m) {
+    friend std::ostream& operator<<(std::ostream& os,
+                                    const FrontierMessage& m) {
         os << "FrontierMessage { type=";
 
         switch (m.type) {

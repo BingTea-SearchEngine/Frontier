@@ -20,7 +20,7 @@ include(FetchContent)
 FetchContent_Declare(
   googletest
   GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG        release-1.11.0
+  GIT_TAG        v1.16.0
 )
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
@@ -76,9 +76,6 @@ target_link_libraries(${THIS} PUBLIC FrontierInterface spdlog::spdlog argparse G
 target_include_directories(${THIS} PRIVATE ${GATEWAY_INCLUDE_DIR})
 # target_link_libraries(${THIS} PRIVATE PriorityQueue BloomFilter)
 
-add_executable(Tests tests/test.cpp)
-target_link_libraries(Tests PRIVATE PriorityQueue GTest::gtest_main)
-
 add_definitions(-DPROJECT_ROOT=\"${CMAKE_CURRENT_SOURCE_DIR}/\")
 add_executable(FrontierInterfaceTests tests/FrontierInterfaceTests.cpp)
 target_link_libraries(FrontierInterfaceTests PRIVATE FrontierInterface GTest::gtest_main)
@@ -88,7 +85,6 @@ add_executable(BloomFilterTests tests/BloomFilterTests.cpp)
 target_link_libraries(BloomFilterTests PRIVATE BloomFilter GTest::gtest_main)
 
 include(GoogleTest)
-gtest_discover_tests(Tests)
 gtest_discover_tests(FrontierInterfaceTests)
 gtest_discover_tests(PriorityQueueTests)
 gtest_discover_tests(BloomFilterTests)

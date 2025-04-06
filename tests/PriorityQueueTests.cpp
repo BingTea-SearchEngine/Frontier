@@ -4,14 +4,11 @@
 #include <vector>
 #include "PriorityQueue.hpp"
 #include "gtest/gtest.h"
-#include "PriorityQueue.hpp"
-#include <vector>
-#include <string>
 
 // Test fixture: each test gets its own instance of PriorityQueue,
 // so the internal priority map is automatically set to its default state.
 class PriorityQueueTest : public ::testing::Test {
-protected:
+   protected:
     // You can initialize common objects here if needed.
 };
 
@@ -38,8 +35,8 @@ TEST_F(PriorityQueueTest, BasicOrdering) {
 TEST_F(PriorityQueueTest, DynamicAdjustment) {
     PriorityQueue pq;
     // Push two URLs with the same TLD (.com), which initially has a priority of 2.
-    pq.push("a.com");  
-    pq.push("b.com");  
+    pq.push("a.com");
+    pq.push("b.com");
 
     // Alphabetical order breaks ties: "a.com" should be popped first.
     EXPECT_EQ(pq.pop(), "a.com");
@@ -60,19 +57,19 @@ TEST_F(PriorityQueueTest, NewTldInsertionAndAdjustment) {
     PriorityQueue pq;
     // Use a new TLD (.xyz) that is not in the initial map.
     pq.push("a.xyz");
-    
+
     // Before popping, the computed priority for .xyz should be the default (0).
     EXPECT_EQ(pq.getPriorityForTld(".xyz"), 0);
-    
+
     // Pop the URL, which adjusts the priority.
     EXPECT_EQ(pq.pop(), "a.xyz");
-    
+
     // After popping, the priority for .xyz should have incremented by 1.
     EXPECT_EQ(pq.getPriorityForTld(".xyz"), 1);
 
     // Push another URL with .xyz and one with .edu.
-    pq.push("b.edu");   // priority 5
-    pq.push("c.xyz");   // now .xyz priority is 1
+    pq.push("b.edu");  // priority 5
+    pq.push("c.xyz");  // now .xyz priority is 1
 
     // "b.edu" should have higher priority than "c.xyz".
     EXPECT_EQ(pq.pop(), "b.edu");
