@@ -1,28 +1,28 @@
 #pragma once
 
+#include <fcntl.h>
 #include <spdlog/fmt/bundled/ranges.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
 #include <argparse/argparse.hpp>
-#include <fcntl.h>
+#include <chrono>
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
-#include <fstream>
-#include <chrono>
 
-#include "GatewayServer.hpp"
 #include "BloomFilter.hpp"
 #include "FrontierInterface.hpp"
+#include "GatewayServer.hpp"
 #include "PriorityQueue.hpp"
 
 using std::cout, std::endl;
 
 class Frontier {
    public:
-    Frontier(int port, int MAX_CLIENTS, uint32_t maxUrls, int batchSize, std::string seedList, 
-             std::string saveFile, int checkpointFrequency);
-
+    Frontier(int port, int MAX_CLIENTS, uint32_t maxUrls, int batchSize,
+             std::string seedList, std::string saveFile,
+             int checkpointFrequency);
 
     void recoverFilter(std::string filePath);
 
@@ -44,6 +44,7 @@ class Frontier {
 
     int _batchSize;
     int _checkpointFrequency;
+    int _lastCheckpoint = 0;
 
     FrontierMessage _handleMessage(FrontierMessage msg);
 };

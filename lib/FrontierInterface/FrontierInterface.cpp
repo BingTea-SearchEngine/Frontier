@@ -3,7 +3,8 @@
 #include <sstream>
 
 std::string FrontierInterface::Encode(FrontierMessage message) {
-    if (static_cast<int>(message.type) < 0 || static_cast<int>(message.type) > 3) {
+    if (static_cast<int>(message.type) < 0 ||
+        static_cast<int>(message.type) > 3) {
         throw std::runtime_error("Invalid Message Type header");
     }
     std::ostringstream oss;

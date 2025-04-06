@@ -7,16 +7,11 @@ PriorityQueue::PriorityQueue(size_t reserveCapacity) {
     data.reserve(reserveCapacity);
     // Default priorities for known TLDs.
     priorityMap = {
-        {".edu", 5},
-        {".gov", 4},
-        {".org", 3},
-        {".com", 2},
-        {".net", 1}
-    };
+        {".edu", 5}, {".gov", 4}, {".org", 3}, {".com", 2}, {".net", 1}};
 }
 
 // Computes the priority of a URL based on its top-level domain.
-int PriorityQueue::computePriority(const std::string &url) {
+int PriorityQueue::computePriority(const std::string& url) {
     size_t pos = url.rfind('.');
     if (pos != std::string::npos) {
         std::string tld = url.substr(pos);
@@ -30,7 +25,7 @@ int PriorityQueue::computePriority(const std::string &url) {
 }
 
 // Adjusts the priority for the URL's TLD (e.g., after it is popped).
-void PriorityQueue::adjustPriority(const std::string &url) {
+void PriorityQueue::adjustPriority(const std::string& url) {
     size_t pos = url.rfind('.');
     if (pos != std::string::npos) {
         std::string tld = url.substr(pos);
@@ -43,7 +38,7 @@ void PriorityQueue::adjustPriority(const std::string &url) {
 
 // Returns true if URL 'a' has a higher priority than URL 'b'.
 // If priorities are equal, it compares them lexicographically.
-bool PriorityQueue::compareURL(const std::string &a, const std::string &b) {
+bool PriorityQueue::compareURL(const std::string& a, const std::string& b) {
     int pa = computePriority(a);
     int pb = computePriority(b);
     if (pa == pb)
@@ -120,8 +115,7 @@ void PriorityQueue::siftDown(size_t i) {
 }
 
 // New public accessor: returns the current priority for the given TLD.
-int PriorityQueue::getPriorityForTld(const std::string &tld) const {
+int PriorityQueue::getPriorityForTld(const std::string& tld) const {
     auto it = priorityMap.find(tld);
     return (it != priorityMap.end()) ? it->second : 0;
 }
-
