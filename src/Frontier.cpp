@@ -2,8 +2,9 @@
 
 Frontier::Frontier(int port, int maxClients, uint32_t maxUrls, int batchSize,
                    std::string seedList, std::string saveFileName,
-                   int checkpointFrequency)
+                   int checkpointFrequency, int frontierCapacity)
     : _server(Server(port, maxClients)),
+      _pq(PriorityQueue(frontierCapacity)),
       _filter(BloomFilter(maxUrls, 0.001)),
       _saveFileName(saveFileName),
       _maxUrls(maxUrls),
@@ -227,6 +228,10 @@ int main(int argc, char** argv) {
         .implicit_value(true)
         .help("Recover from the savefile");
 
+    program.add_argument("-c", "--frontiercapacity")
+        .default_value(10000)
+        .scan<'i', int>();
+
     try {
         program.parse_args(argc, argv);
     } catch (const std::exception& err) {
@@ -243,6 +248,7 @@ int main(int argc, char** argv) {
     std::string seedList = program.get<std::string>("-l");
     int checkpointFrequency = program.get<int>("-f");
     bool recover = program.get<bool>("--recover");
+    int frontierCapacity = program.get<int>("-c");
 
     spdlog::info("Port {}", port);
     spdlog::info("Max clients {}", maxClients);
@@ -251,10 +257,11 @@ int main(int argc, char** argv) {
     spdlog::info("Save file path {}", saveFile);
     spdlog::info("Seed list file path {}", seedList);
     spdlog::info("Checkpoint frequency {}", checkpointFrequency);
+    spdlog::info("PQ capacity {}", frontierCapacity);
 
     spdlog::info("======= Frontier Started =======");
     Frontier frontier(port, maxClients, numUrls, batchSize, seedList, saveFile,
-                      checkpointFrequency);
+                      checkpointFrequency, frontierCapacity);
 
     if (recover) {
         frontier.recoverFilter(saveFile);

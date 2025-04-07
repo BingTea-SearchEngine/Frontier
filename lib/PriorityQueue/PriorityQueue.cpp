@@ -4,7 +4,7 @@
 
 // Constructor: reserves capacity and initializes the priority map.
 PriorityQueue::PriorityQueue(size_t reserveCapacity)
-    : maxCapacity(reserveCapacity) // store the max capacity
+    : maxCapacity(reserveCapacity)  // store the max capacity
 {
     data.reserve(reserveCapacity);
     // Default priorities for known TLDs.
