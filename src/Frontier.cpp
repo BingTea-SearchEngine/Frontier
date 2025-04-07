@@ -103,13 +103,24 @@ void Frontier::start() {
         for (auto m : messages) {
             spdlog::info("Request from {}:{}", m.senderIp, m.senderPort);
 
-            FrontierMessage decodedMessage = FrontierInterface::Decode(m.msg);
+            FrontierMessage decodedMessage;
+            try {
+                decodedMessage = FrontierInterface::Decode(m.msg);
+            } catch (const std::runtime_error& e) {
+                spdlog::error("Error decoding message");
+                continue;
+            }
             spdlog::info(decodedMessage.urls);
             FrontierMessage response = _handleMessage(decodedMessage);
 
             Message msg;
             msg.receiverSock = m.senderSock;
-            msg.msg = FrontierInterface::Encode(response);
+            try {
+                msg.msg = FrontierInterface::Encode(response);
+            } catch (const std::runtime_error& e) {
+                spdlog::error("Error encoding message");
+                msg.msg = "";
+            }
 
             _server.SendMessage(msg);
         }
@@ -144,7 +155,12 @@ void Frontier::start() {
             FrontierMessage endMessage{FrontierMessageType::END, {}};
             Message msg;
             msg.receiverSock = m.senderSock;
-            msg.msg = FrontierInterface::Encode(endMessage);
+            try {
+                msg.msg = FrontierInterface::Encode(endMessage);
+            } catch (const std::runtime_error& e) {
+                spdlog::error("Error encoding message");
+                msg.msg = "";
+            }
 
             _server.SendMessage(msg);
         }

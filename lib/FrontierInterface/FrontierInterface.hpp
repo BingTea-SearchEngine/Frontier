@@ -22,6 +22,7 @@ const std::string MessageHeaders[] = {
 struct FrontierMessage {
     FrontierMessageType type;
     std::vector<std::string> urls;
+    std::vector<std::string> failed;
 
     friend std::ostream& operator<<(std::ostream& os,
                                     const FrontierMessage& m) {
@@ -49,6 +50,14 @@ struct FrontierMessage {
         for (size_t i = 0; i < m.urls.size(); ++i) {
             os << "\"" << m.urls[i] << "\"";
             if (i != m.urls.size() - 1) {
+                os << ", ";
+            }
+        }
+        os << "] }";
+        os << "], failed=[";
+        for (size_t i = 0; i < m.failed.size(); ++i) {
+            os << "\"" << m.failed[i] << "\"";
+            if (i != m.failed.size() - 1) {
                 os << ", ";
             }
         }
