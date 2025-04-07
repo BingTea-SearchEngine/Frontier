@@ -10,7 +10,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall -pedantic")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 
 enable_testing()
@@ -89,5 +88,3 @@ gtest_discover_tests(FrontierInterfaceTests)
 gtest_discover_tests(PriorityQueueTests)
 gtest_discover_tests(BloomFilterTests)
 
-# Specify build type
-set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type")
