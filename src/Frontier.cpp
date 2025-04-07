@@ -111,7 +111,6 @@ void Frontier::start() {
                 spdlog::error("Error decoding message");
                 continue;
             }
-            spdlog::info(decodedMessage.urls);
             FrontierMessage response = _handleMessage(decodedMessage);
 
             Message msg;
@@ -188,8 +187,6 @@ FrontierMessage Frontier::_handleMessage(FrontierMessage msg) {
         // Add to robots.txt set
         return FrontierMessage{FrontierMessageType::URLS, {}};
     }
-    spdlog::info(msg.urls);
-    spdlog::info(msg.failed);
 
     // Add to priority queue
     for (auto url : msg.urls) {
@@ -198,6 +195,11 @@ FrontierMessage Frontier::_handleMessage(FrontierMessage msg) {
             _filter.insert(cleaned);
             _pq.push(cleaned);
         }
+    }
+
+    // Add failed urls back to queue
+    for (auto url : msg.failed) {
+        _pq.push(url);
     }
 
     std::vector<std::string> urls = _pq.popN(_batchSize);
