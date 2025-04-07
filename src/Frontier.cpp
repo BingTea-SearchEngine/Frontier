@@ -1,4 +1,5 @@
 #include "Frontier.hpp"
+#include <sys/types.h>
 
 Frontier::Frontier(int port, int maxClients, uint32_t maxUrls, int batchSize,
                    std::string seedList, std::string saveFileName,
@@ -185,9 +186,10 @@ FrontierMessage Frontier::_handleMessage(FrontierMessage msg) {
     if (msg.type == FrontierMessageType::START) {
     } else if (msg.type == FrontierMessageType::ROBOTS) {
         // Add to robots.txt set
-        spdlog::info("Robots URLS: {}", msg.urls);
         return FrontierMessage{FrontierMessageType::URLS, {}};
     }
+    spdlog::info(msg.urls);
+    spdlog::info(msg.failed);
 
     // Add to priority queue
     for (auto url : msg.urls) {
