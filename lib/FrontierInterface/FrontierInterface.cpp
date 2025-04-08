@@ -12,7 +12,9 @@ std::string FrontierInterface::Encode(FrontierMessage message) {
 
     // Encode urls
     {
+        std::cout << message.urls.size() << std::endl;
         uint32_t numUrls = htonl(static_cast<uint32_t>(message.urls.size()));
+        std::cout << numUrls << std::endl;
         oss.write(reinterpret_cast<char*>(&numUrls), sizeof(numUrls));
 
         for (const auto& url : message.urls) {
