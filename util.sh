@@ -23,7 +23,7 @@ while true; do
         echo "$(date): ❌ Process '$PROCESS_NAME' is NOT running."
         echo "🔄 Restarting '$PROCESS_NAME'"
 
-        nohup ./build/Frontier -n 500000000 -b 50 -l seedList.txt -f 20000 -c 30000 --recover > ~/FrontierLog.txt 2>&1 &
+        nohup ./build/Frontier -n 500000000 -b 50 -l seedList.txt -f 20000 -c 30000 -s frontier_save.txt --recover > ~/FrontierLog.txt 2>&1 &
     fi
 
     sleep 60
