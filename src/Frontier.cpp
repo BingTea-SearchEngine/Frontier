@@ -44,6 +44,7 @@ void Frontier::_checkpoint() {
         saveFile.write(reinterpret_cast<char*>(&len), sizeof(len));
         saveFile.write(url.data(), len);
     }
+    spdlog::info("Writing {} pq elements to {}", _pq.size(), _saveFileName);
 
     // Write filter attributes
     saveFile.write(reinterpret_cast<char*>(&_filter.bits),
@@ -57,6 +58,7 @@ void Frontier::_checkpoint() {
     for (const bool& b : _filter.bloom) {
         saveFile.write(reinterpret_cast<const char*>(&b), sizeof(b));
     }
+    spdlog::info("Writing {} bloom elements to {}", _filter.bloom.size(), _saveFileName);
     saveFile.close();
 }
 
