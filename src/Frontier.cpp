@@ -197,6 +197,7 @@ FrontierMessage Frontier::_handleMessage(FrontierMessage msg) {
         }
     }
 
+    spdlog::info(msg.failed);
     // Add failed urls back to queue
     for (auto url : msg.failed) {
         _pq.push(url);
