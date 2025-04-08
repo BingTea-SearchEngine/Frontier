@@ -103,7 +103,6 @@ void Frontier::start() {
         std::vector<Message> messages = _server.GetMessagesBlocking();
         for (auto m : messages) {
             spdlog::info("Request from {}:{}", m.senderIp, m.senderPort);
-            spdlog::info(m.msg);
 
             FrontierMessage decodedMessage;
             try {

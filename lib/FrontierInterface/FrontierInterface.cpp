@@ -12,9 +12,7 @@ std::string FrontierInterface::Encode(FrontierMessage message) {
 
     // Encode urls
     {
-        std::cout << message.urls.size() << std::endl;
         uint32_t numUrls = htonl(static_cast<uint32_t>(message.urls.size()));
-        std::cout << numUrls << std::endl;
         oss.write(reinterpret_cast<char*>(&numUrls), sizeof(numUrls));
 
         for (const auto& url : message.urls) {
@@ -67,7 +65,6 @@ FrontierMessage FrontierInterface::Decode(const std::string& encoded) {
         uint32_t numUrlsN; 
         iss.read(reinterpret_cast<char*>(&numUrlsN), sizeof(numUrlsN));
         uint32_t numUrls = ntohl(numUrlsN);
-        std::cout << numUrlsN << std::endl;
 
         // Read each URL
         message.urls.reserve(numUrls);
@@ -87,7 +84,6 @@ FrontierMessage FrontierInterface::Decode(const std::string& encoded) {
         uint32_t numFailedN;
         iss.read(reinterpret_cast<char*>(&numFailedN), sizeof(numFailedN));
         uint32_t numFailed = ntohl(numFailedN);
-        std::cout << numFailed << std::endl;
 
         // Read each failed URL
         message.failed.reserve(numFailed);
