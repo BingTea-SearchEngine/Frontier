@@ -198,9 +198,9 @@ FrontierMessage Frontier::_handleMessage(FrontierMessage msg) {
     }
 
     // Add failed urls back to queue
-    for (auto url : msg.failed) {
-        _pq.push(url);
-    }
+    // for (auto url : msg.failed) {
+    //     _pq.push(url);
+    // }
 
     std::vector<std::string> urls = _pq.popN(_batchSize);
     _numUrls += urls.size();
