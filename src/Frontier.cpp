@@ -97,6 +97,7 @@ void Frontier::recoverFilter(std::string filePath) {
         saveFile.read(&b, sizeof(b));
         _filter.bloom[i] = static_cast<bool>(b);
     }
+    spdlog::info("Done receovering pq and filter");
 }
 
 void Frontier::start() {
