@@ -145,7 +145,7 @@ void Frontier::start() {
 
         if (_numUrls >= _lastCheckpoint + _checkpointFrequency) {
             _checkpoint();
-            _lastCheckpoint += _numUrls;
+            _lastCheckpoint = _numUrls;
         }
     }
 
