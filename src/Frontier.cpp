@@ -60,10 +60,11 @@ void Frontier::_checkpoint() {
 
     // Write size of filter
     uint64_t i = 0;
+    uint64_t logInterval = _filter.bits / 10; // Log every 10%
     for (const bool& b : _filter.bloom) {
         saveFile.write(reinterpret_cast<const char*>(&b), sizeof(b));
         i++;
-        if (i % 500000000 == 0) {
+        if (i % logInterval == 0) {
             spdlog::info("{:.2f}% done", (double(i) / _filter.bits) * 100);
         }
     }
