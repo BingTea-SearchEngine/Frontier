@@ -112,7 +112,9 @@ void Frontier::start() {
     auto lastTime = startTime;
     uint32_t lastNumUrls = 0;
     while (_numUrls < _maxUrls) {
+        auto timeBeforeMessage = std::chrono::steady_clock::now();
         std::vector<Message> messages = _server.GetMessagesBlocking();
+        auto timeAfterMessage = std::chrono::steady_clock::now();
         for (auto m : messages) {
             spdlog::info("Request from {}:{}", m.senderIp, m.senderPort);
 
@@ -145,6 +147,14 @@ void Frontier::start() {
             std::chrono::duration_cast<std::chrono::duration<double>>(now -
                                                                       lastTime)
                 .count();
+        double timeWaitingMessage =
+            std::chrono::duration_cast<std::chrono::duration<double>>(timeAfterMessage -
+                                                                      timeBeforeMessage)
+                .count();
+        double timeProcessingRequest =
+            std::chrono::duration_cast<std::chrono::duration<double>>(now -
+                                                                      timeAfterMessage)
+                .count();
         uint32_t documentDiff = _numUrls - lastNumUrls;
         lastNumUrls = _numUrls;
         
@@ -161,6 +171,8 @@ void Frontier::start() {
             spdlog::info(
                 "{} seconds since last request, delta since last {:.2f}",
                 elapsedSinceLastSeconds, documentDiff / elapsedSinceLastSeconds);
+            spdlog::info("Time waiting for message {:.2f}", timeWaitingMessage);
+            spdlog::info("Time processing request {:.2f}", timeProcessingRequest);
         }
 
         if (_numUrls >= _lastCheckpoint + _checkpointFrequency) {
