@@ -6,7 +6,7 @@ Frontier::Frontier(int port, int maxClients, uint32_t maxUrls, int batchSize,
                    int checkpointFrequency, int frontierCapacity)
     : _server(Server(port, maxClients)),
       _pq(PriorityQueue(frontierCapacity)),
-      _filter(BloomFilter(maxUrls, 0.001)),
+      _filter(BloomFilter(maxUrls, 0.01)),
       _saveFileName(saveFileName),
       _maxUrls(maxUrls),
       _batchSize(batchSize),
