@@ -247,7 +247,9 @@ FrontierMessage Frontier::_handleMessage(FrontierMessage msg) {
         }
         if (_pq.size() < 1000) {
             _pq.push(cleaned);
+            continue;
         }
+
         if (!_filter.contains(cleaned)) {
             _filter.insert(cleaned);
             _pq.push(cleaned);
