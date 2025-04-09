@@ -3,7 +3,6 @@
 #include <cmath>
 #include <string>
 #include <vector>
-#include <iostream>
 
 #include <openssl/md5.h>
 
@@ -15,7 +14,6 @@ class BloomFilter {
           numHashes(static_cast<float>(bits) / num_objects * std::log(2)),
           bloom(bits) {
         // Determine the size of bits of our data vector, and resize.
-        std::cout << bits << std::endl;
 
         // Determine number of hash functions to use.
     }

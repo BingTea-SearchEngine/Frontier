@@ -14,6 +14,7 @@ Frontier::Frontier(int port, int maxClients, uint32_t maxUrls, int batchSize,
       _lastCheckpoint(0) {
 
     spdlog::info("Bloom filter size {}", _filter.bloom.size());
+    spdlog::info("Bloom filter num hashes {}", _filter.numHashes);
 
     std::ifstream file(seedList);
     if (!file) {
@@ -87,12 +88,15 @@ void Frontier::recoverFilter(std::string filePath) {
     size_t numHashes;
     saveFile.read(reinterpret_cast<char*>(&bits), sizeof(bits));
     saveFile.read(reinterpret_cast<char*>(&numHashes), sizeof(numHashes));
+    spdlog::info("Read in bloom filter bits {}", bits);
+    spdlog::info("Read in bloom filter num hashes {}", numHashes);
 
     size_t filterSize = 0;
     saveFile.read(reinterpret_cast<char*>(&filterSize), sizeof(filterSize));
     if (filterSize <= 0) {
         spdlog::warn("Filter pq size is <= 0");
     }
+    spdlog::info("Read in bloom filter size {}", filterSize);
 
     _filter.bloom.resize(filterSize);
     for (size_t i = 0; i < filterSize; ++i) {
