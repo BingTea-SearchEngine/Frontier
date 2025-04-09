@@ -84,7 +84,6 @@ void Frontier::recoverFilter(std::string filePath) {
         _pq.data[i].resize(len);
         saveFile.read(_pq.data[i].data(), len);
     }
-    return;
 
     size_t bits;
     size_t numHashes;
