@@ -58,7 +58,7 @@ void Frontier::_checkpoint() {
                    sizeof(_filter.numHashes));
 
     // Write size of filter
-    int i = 0;
+    uint32_t i = 0;
     for (const bool& b : _filter.bloom) {
         saveFile.write(reinterpret_cast<const char*>(&b), sizeof(b));
         i++;
@@ -84,6 +84,7 @@ void Frontier::recoverFilter(std::string filePath) {
         _pq.data[i].resize(len);
         saveFile.read(_pq.data[i].data(), len);
     }
+    return;
 
     size_t bits;
     size_t numHashes;
@@ -98,6 +99,8 @@ void Frontier::recoverFilter(std::string filePath) {
     spdlog::info("Read in bloom filter size {}", bits);
 
     _filter.bloom.resize(bits);
+    _filter.bits = bits;
+    _filter.numHashes = numHashes;
     for (size_t i = 0; i < bits; ++i) {
         char b;
         saveFile.read(&b, sizeof(b));
