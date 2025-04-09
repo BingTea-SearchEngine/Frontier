@@ -239,6 +239,7 @@ FrontierMessage Frontier::_handleMessage(FrontierMessage msg) {
     }
 
     // Add to priority queue
+    spdlog::info("Received {}", msg.urls.size());
     for (auto url : msg.urls) {
         std::string cleaned = trim(url);
         if (cleaned == "") {
