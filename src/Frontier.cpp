@@ -239,9 +239,7 @@ FrontierMessage Frontier::_handleMessage(FrontierMessage msg) {
     // Add to priority queue
     spdlog::info("Received {}", msg.urls.size());
     if (_pq.size() < 1000) {
-        for (int i = 0; i < 1000; ++i) {
-            _pq.push("https://en.wikipedia.org/wiki/Special:Random");
-        }
+        return FrontierMessage{FrontierMessageType::URLS, {"https://en.wikipedia.org/wiki/Special:Random"}};
     } 
 
     for (auto url : msg.urls) {
