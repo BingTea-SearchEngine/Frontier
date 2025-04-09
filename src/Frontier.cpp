@@ -240,19 +240,23 @@ FrontierMessage Frontier::_handleMessage(FrontierMessage msg) {
 
     // Add to priority queue
     spdlog::info("Received {}", msg.urls.size());
-    for (auto url : msg.urls) {
-        std::string cleaned = trim(url);
-        if (cleaned == "") {
-            continue;
+    if (_pq.size() < 1000) {
+        for (auto url : msg.urls ) {
+            std::string cleaned = trim(url);
+            if (cleaned != "") {
+                _pq.push(cleaned);
+            }
         }
-        if (_pq.size() < 1000) {
-            _pq.push(cleaned);
-            continue;
-        }
-
-        if (!_filter.contains(cleaned)) {
-            _filter.insert(cleaned);
-            _pq.push(cleaned);
+    } else {
+        for (auto url : msg.urls) {
+            std::string cleaned = trim(url);
+            if (cleaned == "") {
+                continue;
+            }
+            if (!_filter.contains(cleaned)) {
+                _filter.insert(cleaned);
+                _pq.push(cleaned);
+            }
         }
     }
 
