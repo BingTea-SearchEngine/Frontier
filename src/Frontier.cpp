@@ -58,18 +58,12 @@ void Frontier::_checkpoint() {
                    sizeof(_filter.numHashes));
 
     // Write size of filter
-    size_t filterSize = _filter.bloom.size();
-    uint64_t filterSizeU = _filter.bloom.size();
-    spdlog::info("Writing {} filter size to (size_t) file", filterSize);
-    spdlog::info("Writing {} filter size to (uint) file", filterSizeU);
-    saveFile.write(reinterpret_cast<char*>(&filterSize), sizeof(filterSize));
     int i = 0;
     for (const bool& b : _filter.bloom) {
         saveFile.write(reinterpret_cast<const char*>(&b), sizeof(b));
         i++;
     }
-    spdlog::info("Writing {} bloom elements to {}", i,
-                 _saveFileName);
+    spdlog::info("Finished checkpointing");
     saveFile.close();
 }
 
@@ -98,15 +92,13 @@ void Frontier::recoverFilter(std::string filePath) {
     spdlog::info("Read in bloom filter bits {}", bits);
     spdlog::info("Read in bloom filter num hashes {}", numHashes);
 
-    size_t filterSize = 0;
-    saveFile.read(reinterpret_cast<char*>(&filterSize), sizeof(filterSize));
-    if (filterSize <= 0) {
+    if (bits <= 0) {
         spdlog::warn("Filter pq size is <= 0");
     }
-    spdlog::info("Read in bloom filter size {}", filterSize);
+    spdlog::info("Read in bloom filter size {}", bits);
 
-    _filter.bloom.resize(filterSize);
-    for (size_t i = 0; i < filterSize; ++i) {
+    _filter.bloom.resize(bits);
+    for (size_t i = 0; i < bits; ++i) {
         char b;
         saveFile.read(&b, sizeof(b));
         _filter.bloom[i] = static_cast<bool>(b);
