@@ -25,10 +25,7 @@ Frontier::Frontier(int port, int maxClients, uint32_t maxUrls, int batchSize,
 
     std::string url;
     while (std::getline(file, url)) {
-        if (!_filter.contains(url)) {
-            _filter.insert(url);
-            _pq.push(url);
-        }
+        _pq.push(url);
     }
     file.close();
 }
@@ -115,6 +112,7 @@ void Frontier::recoverFilter(std::string filePath) {
 }
 
 void Frontier::start() {
+    spdlog::info("Starting pq size {}", _pq.size());
     auto startTime = std::chrono::steady_clock::now();
     auto lastTime = startTime;
     uint32_t lastNumUrls = 0;
@@ -242,18 +240,18 @@ FrontierMessage Frontier::_handleMessage(FrontierMessage msg) {
     spdlog::info("Received {}", msg.urls.size());
     if (_pq.size() < 1000) {
         for (int i = 0; i < 1000; ++i) {
-            _pq.push("curl https://en.wikipedia.org/wiki/Special:Random");
+            _pq.push("https://en.wikipedia.org/wiki/Special:Random");
         }
-    } else {
-        for (auto url : msg.urls) {
-            std::string cleaned = trim(url);
-            if (cleaned == "") {
-                continue;
-            }
-            if (!_filter.contains(cleaned)) {
-                _filter.insert(cleaned);
-                _pq.push(cleaned);
-            }
+    } 
+
+    for (auto url : msg.urls) {
+        std::string cleaned = trim(url);
+        if (cleaned == "") {
+            continue;
+        }
+        if (!_filter.contains(cleaned)) {
+            _filter.insert(cleaned);
+            _pq.push(cleaned);
         }
     }
 
