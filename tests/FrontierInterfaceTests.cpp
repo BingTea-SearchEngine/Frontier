@@ -69,10 +69,8 @@ TEST(FrontierInterface, HandlesSingleURL) {
 TEST(FrontierInterface, HandlesURLsWithDelimiters) {
     std::vector<std::string> urls = {"http://example.com?query=foo|bar",
                                      "https://test.com/path|segment"};
-    std::vector<std::string> failed = {
-        "http://failed.com/foo|bar",
-        "https://failed.com/another|one"
-    };
+    std::vector<std::string> failed = {"http://failed.com/foo|bar",
+                                       "https://failed.com/another|one"};
 
     FrontierMessage urlMessage =
         FrontierMessage{FrontierMessageType::URLS, urls, failed};
@@ -94,10 +92,8 @@ TEST(FrontierInterface, HandlesLongURLs) {
     std::vector<std::string> urls = {
         "https://example.com/" + std::string(1000, 'a'),
         "https://long-url.com/" + std::string(2000, 'b')};
-    std::vector<std::string> failed = {
-        "https://failedurl.com/" + std::string(500, 'z')
-    };
-
+    std::vector<std::string> failed = {"https://failedurl.com/" +
+                                       std::string(500, 'z')};
 
     FrontierMessage urlMessage =
         FrontierMessage{FrontierMessageType::URLS, urls, failed};
@@ -119,10 +115,8 @@ TEST(FrontierInterface, HandlesSpecialCharacters) {
     std::vector<std::string> urls = {"https://exämple.com", "https://你好.com",
                                      "https://test.com/space%20url",
                                      "https://[::1]:8080"};
-    std::vector<std::string> failed = {
-        "https://badäsite.net",
-        "https://另一个失败.com"
-    };
+    std::vector<std::string> failed = {"https://badäsite.net",
+                                       "https://另一个失败.com"};
 
     FrontierMessage urlMessage =
         FrontierMessage{FrontierMessageType::URLS, urls, failed};
@@ -157,9 +151,7 @@ TEST(FrontierInterface, HandlesMixedCases) {
     std::vector<std::string> urls = {"http://lowercase.com",
                                      "HTTPS://UPPERCASE.COM",
                                      "Http://MixedCase.com"};
-    std::vector<std::string> failed = {
-        "http://FAIledCASE.com"
-    };
+    std::vector<std::string> failed = {"http://FAIledCASE.com"};
 
     FrontierMessage urlMessage =
         FrontierMessage{FrontierMessageType::URLS, urls, failed};
@@ -180,10 +172,8 @@ TEST(FrontierInterface, HandlesMixedCases) {
 TEST(FrontierInterface, HandlesBinaryDataInURL) {
     std::vector<std::string> urls = {"https://example.com/\x01\x02\x03\x04",
                                      "https://binarydata.com/\xff\xfe\xfd"};
-    std::vector<std::string> failed = {
-        "https://fail.com/\x05\x06",
-        "https://failedbinary/\xaa\xbb\xcc"
-    };
+    std::vector<std::string> failed = {"https://fail.com/\x05\x06",
+                                       "https://failedbinary/\xaa\xbb\xcc"};
 
     FrontierMessage urlMessage =
         FrontierMessage{FrontierMessageType::URLS, urls, failed};
@@ -218,7 +208,6 @@ TEST(FrontierInterface, HandlesMassiveNumberOfURLs) {
     EXPECT_EQ(decoded.type, urlMessage.type);
     EXPECT_EQ(decoded.urls, urlMessage.urls);
     EXPECT_EQ(decoded.failed, urlMessage.failed);
-
 
     FrontierMessage robotsMessage =
         FrontierMessage{FrontierMessageType::URLS, urls};

@@ -58,7 +58,8 @@ void Frontier::_checkpoint() {
     for (const bool& b : _filter.bloom) {
         saveFile.write(reinterpret_cast<const char*>(&b), sizeof(b));
     }
-    spdlog::info("Writing {} bloom elements to {}", _filter.bloom.size(), _saveFileName);
+    spdlog::info("Writing {} bloom elements to {}", _filter.bloom.size(),
+                 _saveFileName);
     saveFile.close();
 }
 
@@ -102,6 +103,7 @@ void Frontier::recoverFilter(std::string filePath) {
 
 void Frontier::start() {
     auto startTime = std::chrono::steady_clock::now();
+    auto lastTime = startTime;
     while (_numUrls < _maxUrls) {
         std::vector<Message> messages = _server.GetMessagesBlocking();
         for (auto m : messages) {
@@ -132,7 +134,12 @@ void Frontier::start() {
             std::chrono::duration_cast<std::chrono::duration<double>>(now -
                                                                       startTime)
                 .count();
+        double elapsedSinceLastSeconds =
+            std::chrono::duration_cast<std::chrono::duration<double>>(now -
+                                                                      lastTime)
+                .count();
         double elapsedMinutes = elapsedSeconds / 60.0;
+        lastTime = now;
 
         spdlog::info("Served {} out of {}", _numUrls, _maxUrls);
         spdlog::info("Frontier size: {}", _pq.size());
@@ -141,6 +148,9 @@ void Frontier::start() {
             double urlsPerSecond = _numUrls / elapsedSeconds;
             spdlog::info("Elapsed time: {:.2f} minutes", elapsedMinutes);
             spdlog::info("{:.2f} URLs/second", urlsPerSecond);
+            spdlog::info(
+                "{} seconds since last request, delta since last {:.2f}",
+                elapsedSinceLastSeconds, _batchSize / elapsedSinceLastSeconds);
         }
 
         if (_numUrls >= _lastCheckpoint + _checkpointFrequency) {

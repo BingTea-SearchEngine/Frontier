@@ -62,7 +62,7 @@ FrontierMessage FrontierInterface::Decode(const std::string& encoded) {
 
     // Read urls
     {
-        uint32_t numUrlsN; 
+        uint32_t numUrlsN;
         iss.read(reinterpret_cast<char*>(&numUrlsN), sizeof(numUrlsN));
         uint32_t numUrls = ntohl(numUrlsN);
 
