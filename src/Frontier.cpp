@@ -63,10 +63,12 @@ void Frontier::_checkpoint() {
     spdlog::info("Writing {} filter size to (size_t) file", filterSize);
     spdlog::info("Writing {} filter size to (uint) file", filterSizeU);
     saveFile.write(reinterpret_cast<char*>(&filterSize), sizeof(filterSize));
+    int i = 0;
     for (const bool& b : _filter.bloom) {
         saveFile.write(reinterpret_cast<const char*>(&b), sizeof(b));
+        i++;
     }
-    spdlog::info("Writing {} bloom elements to {}", _filter.bloom.size(),
+    spdlog::info("Writing {} bloom elements to {}", i,
                  _saveFileName);
     saveFile.close();
 }
