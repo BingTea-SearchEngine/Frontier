@@ -1,5 +1,6 @@
 #include "Frontier.hpp"
 #include <sys/types.h>
+#include <chrono>
 
 Frontier::Frontier(int port, int maxClients, uint32_t maxUrls, int batchSize,
                    std::string seedList, std::string saveFileName,
@@ -148,16 +149,18 @@ void Frontier::start() {
                                                                       lastTime)
                 .count();
         double timeWaitingMessage =
-            std::chrono::duration_cast<std::chrono::duration<double>>(timeAfterMessage -
-                                                                      timeBeforeMessage)
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                timeAfterMessage - timeBeforeMessage)
                 .count();
+
         double timeProcessingRequest =
-            std::chrono::duration_cast<std::chrono::duration<double>>(now -
-                                                                      timeAfterMessage)
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                now - timeAfterMessage)
                 .count();
+
         uint32_t documentDiff = _numUrls - lastNumUrls;
         lastNumUrls = _numUrls;
-        
+
         double elapsedMinutes = elapsedSeconds / 60.0;
         lastTime = now;
 
@@ -170,9 +173,11 @@ void Frontier::start() {
             spdlog::info("{:.2f} URLs/second", urlsPerSecond);
             spdlog::info(
                 "{} seconds since last request, delta since last {:.2f}",
-                elapsedSinceLastSeconds, documentDiff / elapsedSinceLastSeconds);
-            spdlog::info("Time waiting for message {:.2f}", timeWaitingMessage);
-            spdlog::info("Time processing request {:.2f}", timeProcessingRequest);
+                elapsedSinceLastSeconds,
+                documentDiff / elapsedSinceLastSeconds);
+            spdlog::info("Time waiting for message {} ms", timeWaitingMessage);
+            spdlog::info("Time processing request {} ms",
+                         timeProcessingRequest);
         }
 
         if (_numUrls >= _lastCheckpoint + _checkpointFrequency) {
