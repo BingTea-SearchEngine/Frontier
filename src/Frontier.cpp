@@ -101,7 +101,7 @@ void Frontier::recoverFilter(std::string filePath) {
 }
 
 void Frontier::start() {
-    auto startTime = std::chrono::steady_clock::now();
+    auto lastTime = std::chrono::steady_clock::now();
     while (_numUrls < _maxUrls) {
         std::vector<Message> messages = _server.GetMessagesBlocking();
         for (auto m : messages) {
@@ -130,8 +130,9 @@ void Frontier::start() {
         auto now = std::chrono::steady_clock::now();
         double elapsedSeconds =
             std::chrono::duration_cast<std::chrono::duration<double>>(now -
-                                                                      startTime)
+                                                                      lastTime)
                 .count();
+        lastTime = now;
         double elapsedMinutes = elapsedSeconds / 60.0;
 
         spdlog::info("Served {} out of {}", _numUrls, _maxUrls);
