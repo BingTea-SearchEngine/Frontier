@@ -50,13 +50,18 @@ void Frontier::_checkpoint() {
     spdlog::info("Writing {} pq elements to {}", _pq.size(), _saveFileName);
 
     // Write filter attributes
+    spdlog::info("Writing {} bits to file", _filter.bits);
     saveFile.write(reinterpret_cast<char*>(&_filter.bits),
                    sizeof(_filter.bits));
+    spdlog::info("Writing {} numHashes to file", _filter.numHashes);
     saveFile.write(reinterpret_cast<char*>(&_filter.numHashes),
                    sizeof(_filter.numHashes));
 
     // Write size of filter
     size_t filterSize = _filter.bloom.size();
+    uint64_t filterSizeU = _filter.bloom.size();
+    spdlog::info("Writing {} filter size to (size_t) file", filterSize);
+    spdlog::info("Writing {} filter size to (uint) file", filterSizeU);
     saveFile.write(reinterpret_cast<char*>(&filterSize), sizeof(filterSize));
     for (const bool& b : _filter.bloom) {
         saveFile.write(reinterpret_cast<const char*>(&b), sizeof(b));
