@@ -119,6 +119,10 @@ void Frontier::start() {
     auto lastTime = startTime;
     uint32_t lastNumUrls = 0;
     while (_numUrls < _maxUrls) {
+        if (_pq.size() == 0) {
+            spdlog::error("Frontier size is 0. Killing frontier and restarting");
+            exit(EXIT_FAILURE);
+        }
         auto timeBeforeMessage = std::chrono::steady_clock::now();
         std::vector<Message> messages = _server.GetMessagesBlocking();
         auto timeAfterMessage = std::chrono::steady_clock::now();
