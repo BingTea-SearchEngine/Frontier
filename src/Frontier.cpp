@@ -104,6 +104,7 @@ void Frontier::recoverFilter(std::string filePath) {
 void Frontier::start() {
     auto startTime = std::chrono::steady_clock::now();
     auto lastTime = startTime;
+    uint32_t lastNumUrls = 0;
     while (_numUrls < _maxUrls) {
         std::vector<Message> messages = _server.GetMessagesBlocking();
         for (auto m : messages) {
@@ -138,6 +139,9 @@ void Frontier::start() {
             std::chrono::duration_cast<std::chrono::duration<double>>(now -
                                                                       lastTime)
                 .count();
+        uint32_t documentDiff = _numUrls - lastNumUrls;
+        lastNumUrls = _numUrls;
+        
         double elapsedMinutes = elapsedSeconds / 60.0;
         lastTime = now;
 
@@ -150,7 +154,7 @@ void Frontier::start() {
             spdlog::info("{:.2f} URLs/second", urlsPerSecond);
             spdlog::info(
                 "{} seconds since last request, delta since last {:.2f}",
-                elapsedSinceLastSeconds, _batchSize / elapsedSinceLastSeconds);
+                elapsedSinceLastSeconds, documentDiff / elapsedSinceLastSeconds);
         }
 
         if (_numUrls >= _lastCheckpoint + _checkpointFrequency) {
