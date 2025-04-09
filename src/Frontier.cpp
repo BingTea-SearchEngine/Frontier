@@ -13,6 +13,8 @@ Frontier::Frontier(int port, int maxClients, uint32_t maxUrls, int batchSize,
       _checkpointFrequency(checkpointFrequency),
       _lastCheckpoint(0) {
 
+    spdlog::info("Bloom filter size {}", _filter.bloom.size());
+
     std::ifstream file(seedList);
     if (!file) {
         spdlog::error("Couldn't open {}", seedList);
