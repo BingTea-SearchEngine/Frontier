@@ -58,10 +58,8 @@ void Frontier::_checkpoint() {
                    sizeof(_filter.numHashes));
 
     // Write size of filter
-    uint32_t i = 0;
     for (const bool& b : _filter.bloom) {
         saveFile.write(reinterpret_cast<const char*>(&b), sizeof(b));
-        i++;
     }
     spdlog::info("Finished checkpointing");
     saveFile.close();
@@ -74,7 +72,8 @@ void Frontier::recoverFilter(std::string filePath) {
     size_t pqSize = 0;
     saveFile.read(reinterpret_cast<char*>(&pqSize), sizeof(pqSize));
     if (pqSize <= 0) {
-        spdlog::warn("Checkpoint file pq size is <= 0");
+        spdlog::warn("Checkpoint file pq size is <= 0, skipping recovery");
+        return;
     }
 
     _pq.data.resize(pqSize);
