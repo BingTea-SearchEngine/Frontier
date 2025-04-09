@@ -59,8 +59,13 @@ void Frontier::_checkpoint() {
                    sizeof(_filter.numHashes));
 
     // Write size of filter
+    uint64_t i = 0;
     for (const bool& b : _filter.bloom) {
         saveFile.write(reinterpret_cast<const char*>(&b), sizeof(b));
+        i++;
+        if (i % 500000000 == 0) {
+            spdlog::info("{:.2f}% done", (double(i) / _filter.bits) * 100);
+        }
     }
     spdlog::info("Finished checkpointing");
     saveFile.close();
