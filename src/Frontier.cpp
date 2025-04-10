@@ -13,6 +13,7 @@ Frontier::Frontier(int port, int maxClients, uint32_t maxUrls, int batchSize,
       _batchSize(batchSize),
       _checkpointFrequency(checkpointFrequency),
       _lastCheckpoint(0),
+      _maxFrontierSize(frontierCapacity), 
       _seedList(seedList),
       _emergencyRecovery(emergencyRecovery) {
     spdlog::info("Bloom filter size {}", _filter.bloom.size());
@@ -256,6 +257,9 @@ FrontierMessage Frontier::_handleMessage(FrontierMessage msg) {
     spdlog::info("Received {}", msg.urls.size());
 
     for (auto url : msg.urls) {
+        if (_pq.size() >= _maxFrontierSize ) {
+            break;
+        }
         std::string cleaned = trim(url);
         if (cleaned == "") {
             continue;

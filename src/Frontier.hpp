@@ -45,6 +45,7 @@ class Frontier {
     int _batchSize;
     int _checkpointFrequency;
     int _lastCheckpoint = 0;
+    int _maxFrontierSize = 0;
 
     std::string _seedList;
     std::string _emergencyRecovery;
