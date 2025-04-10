@@ -46,5 +46,7 @@ class Frontier {
     int _checkpointFrequency;
     int _lastCheckpoint = 0;
 
+    std::string _seedList;
+
     FrontierMessage _handleMessage(FrontierMessage msg);
 };

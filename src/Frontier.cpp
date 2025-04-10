@@ -12,7 +12,8 @@ Frontier::Frontier(int port, int maxClients, uint32_t maxUrls, int batchSize,
       _maxUrls(maxUrls),
       _batchSize(batchSize),
       _checkpointFrequency(checkpointFrequency),
-      _lastCheckpoint(0) {
+      _lastCheckpoint(0),
+      _seedList(seedList) {
 
     spdlog::info("Bloom filter size {}", _filter.bloom.size());
     spdlog::info("Bloom filter num hashes {}", _filter.numHashes);
@@ -251,9 +252,20 @@ FrontierMessage Frontier::_handleMessage(FrontierMessage msg) {
     }
 
     if (_pq.size() < 1000) {
-        std::string url = _pq.pop();
-        std::string reddit = "https://www.reddit.com/";
-        return FrontierMessage{FrontierMessageType::URLS, {"https://en.wikipedia.org/wiki/Special:Random", url, reddit}};
+        std::vector<std::string> urls;
+        urls.push_back(_pq.pop());
+        std::ifstream file(_seedList);
+        if (!file) {
+            spdlog::error("Error opening seed list againn");
+            return FrontierMessage{FrontierMessageType::URLS, urls};
+        }
+        std::string url;
+        while (std::getline(file, url)) {
+            urls.push_back(url);
+        }
+        file.close();
+
+        return FrontierMessage{FrontierMessageType::URLS, urls};
     } 
 
     // Add failed urls back to queue
