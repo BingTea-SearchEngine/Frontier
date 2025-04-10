@@ -252,7 +252,8 @@ FrontierMessage Frontier::_handleMessage(FrontierMessage msg) {
 
     if (_pq.size() < 1000) {
         std::string url = _pq.pop();
-        return FrontierMessage{FrontierMessageType::URLS, {"https://en.wikipedia.org/wiki/Special:Random", url}};
+        std::string reddit = "https://www.reddit.com/";
+        return FrontierMessage{FrontierMessageType::URLS, {"https://en.wikipedia.org/wiki/Special:Random", url, reddit}};
     } 
 
     // Add failed urls back to queue
