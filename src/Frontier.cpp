@@ -4,7 +4,7 @@
 
 Frontier::Frontier(int port, int maxClients, uint32_t maxUrls, int batchSize,
                    std::string seedList, std::string saveFileName,
-                   int checkpointFrequency, int frontierCapacity)
+                   int checkpointFrequency, int frontierCapacity, std::string emergencyRecovery)
     : _server(Server(port, maxClients)),
       _pq(PriorityQueue(frontierCapacity)),
       _filter(BloomFilter(maxUrls, 0.01)),
@@ -13,8 +13,8 @@ Frontier::Frontier(int port, int maxClients, uint32_t maxUrls, int batchSize,
       _batchSize(batchSize),
       _checkpointFrequency(checkpointFrequency),
       _lastCheckpoint(0),
-      _seedList(seedList) {
-
+      _seedList(seedList),
+      _emergencyRecovery(emergencyRecovery) {
     spdlog::info("Bloom filter size {}", _filter.bloom.size());
     spdlog::info("Bloom filter num hashes {}", _filter.numHashes);
 
@@ -245,21 +245,22 @@ FrontierMessage Frontier::_handleMessage(FrontierMessage msg) {
         if (cleaned == "") {
             continue;
         }
-        // if (!_filter.contains(cleaned)) {
-            // _filter.insert(cleaned);
-        _pq.push(cleaned);
-        // }
+        if (!_filter.contains(cleaned)) {
+            _filter.insert(cleaned);
+            _pq.push(cleaned);
+        }
     }
 
-    if (_pq.size() == 0) {
+    if (_pq.size() < 1000) {
         std::vector<std::string> urls;
         urls.push_back(_pq.pop());
-        std::ifstream file(_seedList);
+        std::ifstream file(_emergencyRecovery);
         if (!file) {
             spdlog::error("Error opening seed list againn");
             return FrontierMessage{FrontierMessageType::URLS, urls};
         }
         std::string url;
+        spdlog::info("EMERGENCY, sending {}", urls);
         while (std::getline(file, url)) {
             urls.push_back(url);
         }
@@ -323,6 +324,10 @@ int main(int argc, char** argv) {
         .default_value(10000)
         .scan<'i', int>();
 
+    program.add_argument("-e", "--emergencyRecovery") 
+        .required()
+        .help("File with links in case frontier runs out");
+
     try {
         program.parse_args(argc, argv);
     } catch (const std::exception& err) {
@@ -340,6 +345,7 @@ int main(int argc, char** argv) {
     int checkpointFrequency = program.get<int>("-f");
     bool recover = program.get<bool>("--recover");
     int frontierCapacity = program.get<int>("-c");
+    std::string emergencyRecoveryFile = program.get<std::string>("-e");
 
     spdlog::info("Port {}", port);
     spdlog::info("Max clients {}", maxClients);
@@ -349,10 +355,11 @@ int main(int argc, char** argv) {
     spdlog::info("Seed list file path {}", seedList);
     spdlog::info("Checkpoint frequency {}", checkpointFrequency);
     spdlog::info("PQ capacity {}", frontierCapacity);
+    spdlog::info("Emergency file path {}", emergencyRecoveryFile);
 
     spdlog::info("======= Frontier Started =======");
     Frontier frontier(port, maxClients, numUrls, batchSize, seedList, saveFile,
-                      checkpointFrequency, frontierCapacity);
+                      checkpointFrequency, frontierCapacity, emergencyRecoveryFile);
 
     if (recover) {
         frontier.recoverFilter(saveFile);
