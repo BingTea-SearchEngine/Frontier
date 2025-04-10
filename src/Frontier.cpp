@@ -89,20 +89,20 @@ void Frontier::recoverFilter(std::string filePath) {
         saveFile.read(_pq.data[i].data(), len);
     }
     
-    if (_pq.size() < 1000) {
-        spdlog::warn("Emergency, pq is too small.");
-            std::ifstream file(_emergencyRecovery);
-        if (!file) {
-            spdlog::error("Couldn't open {}", _emergencyRecovery);
-            exit(EXIT_FAILURE);
-        }
-
-        std::string url;
-        while (std::getline(file, url)) {
-            _pq.push(url);
-        }
-        file.close();
-    }
+    // if (_pq.size() < 1000) {
+    //     spdlog::warn("Emergency, pq is too small.");
+    //         std::ifstream file(_emergencyRecovery);
+    //     if (!file) {
+    //         spdlog::error("Couldn't open {}", _emergencyRecovery);
+    //         exit(EXIT_FAILURE);
+    //     }
+    //
+    //     std::string url;
+    //     while (std::getline(file, url)) {
+    //         _pq.push(url);
+    //     }
+    //     file.close();
+    // }
 
     size_t bits;
     size_t numHashes;
@@ -264,6 +264,10 @@ FrontierMessage Frontier::_handleMessage(FrontierMessage msg) {
             _filter.insert(cleaned);
             _pq.push(cleaned);
         }
+    }
+
+    if (_pq.size () < 1000) {
+        return FrontierMessage{FrontierMessageType::URLS, {"https://en.wikipedia.org/wiki/Wikipedia:Random"}};
     }
 
     // Add failed urls back to queue
