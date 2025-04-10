@@ -260,11 +260,11 @@ FrontierMessage Frontier::_handleMessage(FrontierMessage msg) {
             return FrontierMessage{FrontierMessageType::URLS, urls};
         }
         std::string url;
-        spdlog::info("EMERGENCY, sending {}", urls);
         while (std::getline(file, url)) {
             urls.push_back(url);
         }
         file.close();
+        spdlog::info("EMERGENCY, sending {}", urls);
 
         return FrontierMessage{FrontierMessageType::URLS, urls};
     } 
