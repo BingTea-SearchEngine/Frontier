@@ -139,8 +139,12 @@ void Frontier::start() {
             exit(EXIT_FAILURE);
         }
         auto timeBeforeMessage = std::chrono::steady_clock::now();
-        std::vector<Message> messages = _server.GetMessagesBlocking();
+        std::vector<Message> messages = _server.GetMessages();
         auto timeAfterMessage = std::chrono::steady_clock::now();
+        if (messages.size() == 0) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            continue;
+        }
         for (auto m : messages) {
             spdlog::info("Request from {}:{}", m.senderIp, m.senderPort);
 
