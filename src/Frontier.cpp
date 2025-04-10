@@ -251,7 +251,7 @@ FrontierMessage Frontier::_handleMessage(FrontierMessage msg) {
         }
     }
 
-    if (_pq.size() < 1000) {
+    if (_pq.size() == 0) {
         std::vector<std::string> urls;
         urls.push_back(_pq.pop());
         std::ifstream file(_seedList);
