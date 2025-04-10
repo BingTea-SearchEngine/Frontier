@@ -2,7 +2,7 @@
 
 PROCESS_NAME="Frontier"
 LOG_FILE=~/FrontierLog.txt
-CMD="/home/wbjin/Frontier/build/Frontier -n 50000000 -b 50 -l /home/wbjin/Frontier/seedList.txt -f 30000 -c 50000 -s /home/wbjin/Frontier/frontier_save.txt -e /home/wbjin/Frontier/emergencylist.txt --recover"
+CMD="/home/wbjin/Frontier/build/Frontier -n 50000000 -b 50 -l /home/wbjin/Frontier/seedList.txt -f 10000 -c 50000 -s /home/wbjin/Frontier/frontier_save.txt -e /home/wbjin/Frontier/emergencylist.txt --recover"
 CHECK_INTERVAL=60  # in seconds
 MAX_UNCHANGED=5    # number of iterations before restart
 
