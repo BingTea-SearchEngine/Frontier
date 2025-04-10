@@ -252,8 +252,7 @@ FrontierMessage Frontier::_handleMessage(FrontierMessage msg) {
     }
 
     if (_pq.size() < 1000) {
-        std::vector<std::string> urls;
-        urls.push_back(_pq.pop(5));
+        std::vector<std::string> urls = _pq.popN(10);
         std::ifstream file(_emergencyRecovery);
         if (!file) {
             spdlog::error("Error opening seed list againn");
