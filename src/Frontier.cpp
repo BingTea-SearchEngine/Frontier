@@ -88,6 +88,21 @@ void Frontier::recoverFilter(std::string filePath) {
         _pq.data[i].resize(len);
         saveFile.read(_pq.data[i].data(), len);
     }
+    
+    if (_pq.size() < 1000) {
+        spdlog::warn("Emergency, pq is too small.");
+            std::ifstream file(_emergencyRecovery);
+        if (!file) {
+            spdlog::error("Couldn't open {}", _emergencyRecovery);
+            exit(EXIT_FAILURE);
+        }
+
+        std::string url;
+        while (std::getline(file, url)) {
+            _pq.push(url);
+        }
+        file.close();
+    }
 
     size_t bits;
     size_t numHashes;
@@ -250,23 +265,6 @@ FrontierMessage Frontier::_handleMessage(FrontierMessage msg) {
             _pq.push(cleaned);
         }
     }
-
-    if (_pq.size() < 1000) {
-        std::vector<std::string> urls = _pq.popN(10);
-        std::ifstream file(_emergencyRecovery);
-        if (!file) {
-            spdlog::error("Error opening seed list againn");
-            return FrontierMessage{FrontierMessageType::URLS, urls};
-        }
-        std::string url;
-        while (std::getline(file, url)) {
-            urls.push_back(url);
-        }
-        file.close();
-        spdlog::info("EMERGENCY, sending {}", urls);
-
-        return FrontierMessage{FrontierMessageType::URLS, urls};
-    } 
 
     // Add failed urls back to queue
     // for (auto url : msg.failed) {
