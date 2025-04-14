@@ -1,16 +1,23 @@
 #include "Frontier.hpp"
+#include <sys/types.h>
+#include <chrono>
 
 Frontier::Frontier(int port, int maxClients, uint32_t maxUrls, int batchSize,
                    std::string seedList, std::string saveFileName,
-                   int checkpointFrequency, int frontierCapacity)
+                   int checkpointFrequency, int frontierCapacity, std::string emergencyRecovery)
     : _server(Server(port, maxClients)),
       _pq(PriorityQueue(frontierCapacity)),
-      _filter(BloomFilter(maxUrls, 0.001)),
+      _filter(BloomFilter(maxUrls, 0.01)),
       _saveFileName(saveFileName),
       _maxUrls(maxUrls),
       _batchSize(batchSize),
       _checkpointFrequency(checkpointFrequency),
-      _lastCheckpoint(0) {
+      _lastCheckpoint(0),
+      _maxFrontierSize(frontierCapacity), 
+      _seedList(seedList),
+      _emergencyRecovery(emergencyRecovery) {
+    spdlog::info("Bloom filter size {}", _filter.bloom.size());
+    spdlog::info("Bloom filter num hashes {}", _filter.numHashes);
 
     std::ifstream file(seedList);
     if (!file) {
@@ -20,10 +27,7 @@ Frontier::Frontier(int port, int maxClients, uint32_t maxUrls, int batchSize,
 
     std::string url;
     while (std::getline(file, url)) {
-        if (!_filter.contains(url)) {
-            _filter.insert(url);
-            _pq.push(url);
-        }
+        _pq.push(url);
     }
     file.close();
 }
@@ -43,19 +47,27 @@ void Frontier::_checkpoint() {
         saveFile.write(reinterpret_cast<char*>(&len), sizeof(len));
         saveFile.write(url.data(), len);
     }
+    spdlog::info("Writing {} pq elements to {}", _pq.size(), _saveFileName);
 
     // Write filter attributes
+    spdlog::info("Writing {} bits to file", _filter.bits);
     saveFile.write(reinterpret_cast<char*>(&_filter.bits),
                    sizeof(_filter.bits));
+    spdlog::info("Writing {} numHashes to file", _filter.numHashes);
     saveFile.write(reinterpret_cast<char*>(&_filter.numHashes),
                    sizeof(_filter.numHashes));
 
     // Write size of filter
-    size_t filterSize = _filter.bloom.size();
-    saveFile.write(reinterpret_cast<char*>(&filterSize), sizeof(filterSize));
+    uint64_t i = 0;
+    uint64_t logInterval = _filter.bits / 10; // Log every 10%
     for (const bool& b : _filter.bloom) {
         saveFile.write(reinterpret_cast<const char*>(&b), sizeof(b));
+        i++;
+        if (i % logInterval == 0) {
+            spdlog::info("{:.2f}% done", (double(i) / _filter.bits) * 100);
+        }
     }
+    spdlog::info("Finished checkpointing");
     saveFile.close();
 }
 
@@ -66,7 +78,8 @@ void Frontier::recoverFilter(std::string filePath) {
     size_t pqSize = 0;
     saveFile.read(reinterpret_cast<char*>(&pqSize), sizeof(pqSize));
     if (pqSize <= 0) {
-        spdlog::warn("Checkpoint file pq size is <= 0");
+        spdlog::warn("Checkpoint file pq size is <= 0, skipping recovery");
+        return;
     }
 
     _pq.data.resize(pqSize);
@@ -76,40 +89,82 @@ void Frontier::recoverFilter(std::string filePath) {
         _pq.data[i].resize(len);
         saveFile.read(_pq.data[i].data(), len);
     }
+    
+    // if (_pq.size() < 1000) {
+    //     spdlog::warn("Emergency, pq is too small.");
+    //         std::ifstream file(_emergencyRecovery);
+    //     if (!file) {
+    //         spdlog::error("Couldn't open {}", _emergencyRecovery);
+    //         exit(EXIT_FAILURE);
+    //     }
+    //
+    //     std::string url;
+    //     while (std::getline(file, url)) {
+    //         _pq.push(url);
+    //     }
+    //     file.close();
+    // }
 
     size_t bits;
     size_t numHashes;
     saveFile.read(reinterpret_cast<char*>(&bits), sizeof(bits));
     saveFile.read(reinterpret_cast<char*>(&numHashes), sizeof(numHashes));
+    spdlog::info("Read in bloom filter bits {}", bits);
+    spdlog::info("Read in bloom filter num hashes {}", numHashes);
 
-    size_t filterSize = 0;
-    saveFile.read(reinterpret_cast<char*>(&filterSize), sizeof(filterSize));
-    if (filterSize <= 0) {
+    if (bits <= 0) {
         spdlog::warn("Filter pq size is <= 0");
     }
+    spdlog::info("Read in bloom filter size {}", bits);
 
-    _filter.bloom.resize(filterSize);
-    for (size_t i = 0; i < filterSize; ++i) {
+    _filter.bloom.resize(bits);
+    _filter.bits = bits;
+    _filter.numHashes = numHashes;
+    for (size_t i = 0; i < bits; ++i) {
         char b;
         saveFile.read(&b, sizeof(b));
         _filter.bloom[i] = static_cast<bool>(b);
     }
+    spdlog::info("Done receovering pq and filter");
 }
 
 void Frontier::start() {
+    spdlog::info("Starting pq size {}", _pq.size());
     auto startTime = std::chrono::steady_clock::now();
+    auto lastTime = startTime;
+    uint32_t lastNumUrls = 0;
     while (_numUrls < _maxUrls) {
-        std::vector<Message> messages = _server.GetMessagesBlocking();
+        if (_pq.size() == 0) {
+            spdlog::error("Frontier size is 0. Killing frontier and restarting");
+            exit(EXIT_FAILURE);
+        }
+        auto timeBeforeMessage = std::chrono::steady_clock::now();
+        std::vector<Message> messages = _server.GetMessages();
+        auto timeAfterMessage = std::chrono::steady_clock::now();
+        if (messages.size() == 0) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            continue;
+        }
         for (auto m : messages) {
             spdlog::info("Request from {}:{}", m.senderIp, m.senderPort);
 
-            FrontierMessage decodedMessage = FrontierInterface::Decode(m.msg);
-            spdlog::info(decodedMessage.urls);
+            FrontierMessage decodedMessage;
+            try {
+                decodedMessage = FrontierInterface::Decode(m.msg);
+            } catch (const std::runtime_error& e) {
+                spdlog::error("Error decoding message");
+                continue;
+            }
             FrontierMessage response = _handleMessage(decodedMessage);
 
             Message msg;
             msg.receiverSock = m.senderSock;
-            msg.msg = FrontierInterface::Encode(response);
+            try {
+                msg.msg = FrontierInterface::Encode(response);
+            } catch (const std::runtime_error& e) {
+                spdlog::error("Error encoding message");
+                msg.msg = "";
+            }
 
             _server.SendMessage(msg);
         }
@@ -118,7 +173,25 @@ void Frontier::start() {
             std::chrono::duration_cast<std::chrono::duration<double>>(now -
                                                                       startTime)
                 .count();
+        double elapsedSinceLastSeconds =
+            std::chrono::duration_cast<std::chrono::duration<double>>(now -
+                                                                      lastTime)
+                .count();
+        double timeWaitingMessage =
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                timeAfterMessage - timeBeforeMessage)
+                .count();
+
+        double timeProcessingRequest =
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                now - timeAfterMessage)
+                .count();
+
+        uint32_t documentDiff = _numUrls - lastNumUrls;
+        lastNumUrls = _numUrls;
+
         double elapsedMinutes = elapsedSeconds / 60.0;
+        lastTime = now;
 
         spdlog::info("Served {} out of {}", _numUrls, _maxUrls);
         spdlog::info("Frontier size: {}", _pq.size());
@@ -127,11 +200,18 @@ void Frontier::start() {
             double urlsPerSecond = _numUrls / elapsedSeconds;
             spdlog::info("Elapsed time: {:.2f} minutes", elapsedMinutes);
             spdlog::info("{:.2f} URLs/second", urlsPerSecond);
+            spdlog::info(
+                "{} seconds since last request, delta since last {:.2f}",
+                elapsedSinceLastSeconds,
+                documentDiff / elapsedSinceLastSeconds);
+            spdlog::info("Time waiting for message {} ms", timeWaitingMessage);
+            spdlog::info("Time processing request {} ms",
+                         timeProcessingRequest);
         }
 
         if (_numUrls >= _lastCheckpoint + _checkpointFrequency) {
             _checkpoint();
-            _lastCheckpoint += _numUrls;
+            _lastCheckpoint = _numUrls;
         }
     }
 
@@ -144,7 +224,12 @@ void Frontier::start() {
             FrontierMessage endMessage{FrontierMessageType::END, {}};
             Message msg;
             msg.receiverSock = m.senderSock;
-            msg.msg = FrontierInterface::Encode(endMessage);
+            try {
+                msg.msg = FrontierInterface::Encode(endMessage);
+            } catch (const std::runtime_error& e) {
+                spdlog::error("Error encoding message");
+                msg.msg = "";
+            }
 
             _server.SendMessage(msg);
         }
@@ -169,18 +254,34 @@ FrontierMessage Frontier::_handleMessage(FrontierMessage msg) {
     if (msg.type == FrontierMessageType::START) {
     } else if (msg.type == FrontierMessageType::ROBOTS) {
         // Add to robots.txt set
-        spdlog::info("Robots URLS: {}", msg.urls);
         return FrontierMessage{FrontierMessageType::URLS, {}};
     }
 
     // Add to priority queue
+    spdlog::info("Received {}", msg.urls.size());
+
     for (auto url : msg.urls) {
+        if (_pq.size() >= _maxFrontierSize ) {
+            break;
+        }
         std::string cleaned = trim(url);
-        if (cleaned != "" && !_filter.contains(cleaned)) {
+        if (cleaned == "") {
+            continue;
+        }
+        if (!_filter.contains(cleaned)) {
             _filter.insert(cleaned);
             _pq.push(cleaned);
         }
     }
+
+    if (_pq.size () < 1000) {
+        return FrontierMessage{FrontierMessageType::URLS, {"https://en.wikipedia.org/wiki/Wikipedia:Random"}};
+    }
+
+    // Add failed urls back to queue
+    // for (auto url : msg.failed) {
+    //     _pq.push(url);
+    // }
 
     std::vector<std::string> urls = _pq.popN(_batchSize);
     _numUrls += urls.size();
@@ -232,6 +333,10 @@ int main(int argc, char** argv) {
         .default_value(10000)
         .scan<'i', int>();
 
+    program.add_argument("-e", "--emergencyRecovery") 
+        .required()
+        .help("File with links in case frontier runs out");
+
     try {
         program.parse_args(argc, argv);
     } catch (const std::exception& err) {
@@ -249,6 +354,7 @@ int main(int argc, char** argv) {
     int checkpointFrequency = program.get<int>("-f");
     bool recover = program.get<bool>("--recover");
     int frontierCapacity = program.get<int>("-c");
+    std::string emergencyRecoveryFile = program.get<std::string>("-e");
 
     spdlog::info("Port {}", port);
     spdlog::info("Max clients {}", maxClients);
@@ -258,10 +364,11 @@ int main(int argc, char** argv) {
     spdlog::info("Seed list file path {}", seedList);
     spdlog::info("Checkpoint frequency {}", checkpointFrequency);
     spdlog::info("PQ capacity {}", frontierCapacity);
+    spdlog::info("Emergency file path {}", emergencyRecoveryFile);
 
     spdlog::info("======= Frontier Started =======");
     Frontier frontier(port, maxClients, numUrls, batchSize, seedList, saveFile,
-                      checkpointFrequency, frontierCapacity);
+                      checkpointFrequency, frontierCapacity, emergencyRecoveryFile);
 
     if (recover) {
         frontier.recoverFilter(saveFile);
